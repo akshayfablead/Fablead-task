@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RecordController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\OtpController;
 
 // Redirect root URL to dashboard.
 Route::redirect('/', '/dashboard');
@@ -12,7 +13,9 @@ Route::redirect('/', '/dashboard');
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:login')->name('login.store');
-});
+
+
+    });
 
 // Authenticated routes.
 Route::middleware('auth')->group(function () {
@@ -30,6 +33,11 @@ Route::middleware('auth')->group(function () {
     // Route::put('/records/{record}', [RecordController::class, 'update'])->whereNumber('record')->name('records.update');
     // Route::delete('/records/{record}', [RecordController::class, 'destroy'])->whereNumber('record')->name('records.destroy');
 
+    Route::get('/phone', [OtpController::class, 'create'])->name('otp.phone');
+    Route::post('/phone/send-otp', [OtpController::class, 'send'])->name('otp.send');
+    Route::get('/verify-otp', [OtpController::class, 'showVerify'])->name('otp.verify');
+    Route::post('/verify-otp', [OtpController::class, 'verify'])->name('otp.verify.submit');
+    Route::post('/verify-otp/resend', [OtpController::class, 'resend'])->name('otp.resend');
 
     Route::get('/records', [RecordController::class, 'page'])->name('records.page');
     Route::get('/records/data', [RecordController::class,'index',])->name('records.data');

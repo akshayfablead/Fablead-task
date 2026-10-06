@@ -62,6 +62,13 @@
                         Records
                     </a>
 
+                    <a
+                        class="list-group-item list-group-item-action"
+                        href="{{ route('otp.phone') }}"
+                    >
+                        phone Text SMS
+                    </a>
+
                     @can('manage-system')
                         <a
                             class="list-group-item list-group-item-action"

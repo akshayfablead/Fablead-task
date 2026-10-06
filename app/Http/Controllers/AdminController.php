@@ -50,11 +50,7 @@ class AdminController extends Controller
     {
         [$data, $role, $overrides] = $this->accountData($request);
 
-        DB::transaction(function () use (
-            $data,
-            $role,
-            $overrides
-        ): void {
+        DB::transaction(function () use ($data, $role, $overrides): void {
             $user = User::create($data);
             $user->assignRole($role);
             $user->permission_overrides = $overrides;
