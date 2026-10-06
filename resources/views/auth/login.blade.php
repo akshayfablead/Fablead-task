@@ -44,12 +44,27 @@
                     </div>
                 @endif
 
-                <button
-                    type="submit"
-                    class="btn btn-primary w-100"
-                >
-                    Login
-                </button>
+                <div class="d-grid gap-2">
+    <button
+        type="submit"
+        class="btn btn-primary"
+    >
+        Login
+    </button>
+
+    <div class="text-center text-muted my-2">
+        <span>OR</span>
+    </div>
+
+    <a
+        href="{{ route('google.redirect') }}"
+        class="btn btn-outline-dark d-flex align-items-center justify-content-center gap-2"
+    >
+        <i class="bi bi-google"></i>
+        Continue with Google
+    </a>
+</div>
+
             </form>
         </div>
     </div>

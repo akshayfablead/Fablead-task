@@ -41,4 +41,10 @@ return [
         'verify_service_sid' => env('TWILIO_VERIFY_SERVICE_SID'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
 ];

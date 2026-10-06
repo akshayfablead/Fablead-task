@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
+use App\Models\User;
+use Laravel\Socialite\Facades\Socialite;
+
+
 class AuthController extends Controller
 {
     public function create()
@@ -45,5 +49,30 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('login');
+    }
+
+    public function redirectToGoogle()
+    {
+         return Socialite::driver('google')->redirect();
+    }
+
+
+    public function handleGoogleCallback()
+    {
+         $googleUser = Socialite::driver('google')->user();
+
+        $user = User::updateOrCreate(
+            [
+                'email' => $googleUser->getEmail(),
+            ],
+            [
+                'name' => $googleUser->getName(),
+                'google_id' => $googleUser->getId(),
+            ]
+        );
+
+        Auth::login($user);
+
+        return redirect()->route('dashboard');
     }
 }
