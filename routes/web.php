@@ -5,6 +5,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\RecordController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\GoogleSheetsController;
+use App\Http\Controllers\GoogleCalendarController;
 
 Route::redirect('/', '/dashboard');
 
@@ -16,6 +18,24 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'store'])
         ->middleware('throttle:login')
         ->name('login.store');
+
+    Route::get('/register', [AuthController::class, 'register'])
+        ->name('register');
+
+    Route::post('/register/send-otp', [AuthController::class, 'sendRegisterOtp'])
+        ->middleware('throttle:6,1')
+        ->name('register.send-otp');
+
+    Route::get('/register/verify-otp', [AuthController::class, 'showRegisterVerify'])
+        ->name('register.verify');
+
+    Route::post('/register/verify-otp', [AuthController::class, 'verifyRegisterOtp'])
+        ->middleware('throttle:6,1')
+        ->name('register.verify.submit');
+
+    Route::post('/register/resend-otp', [AuthController::class, 'resendRegisterOtp'])
+        ->middleware('throttle:3,1')
+        ->name('register.resend-otp');
 
     Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])
         ->name('google.redirect');
@@ -66,6 +86,18 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('/records/{record}', [RecordController::class, 'destroy'])
         ->name('records.destroy');
+
+    Route::get('/google-sheets', [GoogleSheetsController::class, 'index'])
+        ->name('google-sheets.index');
+
+    Route::get('/auth/google/calendar/connect', [GoogleCalendarController::class, 'connect'])
+        ->name('google.calendar.connect');
+
+    Route::get('/auth/google/calendar/callback', [GoogleCalendarController::class, 'callback'])
+        ->name('google.calendar.callback');
+
+    Route::post('/google-calendar/events', [GoogleCalendarController::class, 'storeEvent'])
+        ->name('google.calendar.events.store');
 
     // Admin routes.
     Route::prefix('admin')

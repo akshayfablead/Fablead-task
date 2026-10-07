@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\GoogleCalendarToken;
 
 class User extends Authenticatable
 {
@@ -17,6 +19,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
         'google_id',
     ];
@@ -67,5 +70,10 @@ class User extends Authenticatable
         }
 
         return $this->hasPermissionTo($permission, 'web');
+    }
+
+    public function googleCalendarToken(): HasOne
+    {
+        return $this->hasOne(GoogleCalendarToken::class);
     }
 }

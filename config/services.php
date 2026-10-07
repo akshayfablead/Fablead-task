@@ -47,4 +47,18 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'google_calendar' => [
+        'redirect' => env('GOOGLE_CALENDAR_REDIRECT_URI'),
+        'timezone' => env('GOOGLE_CALENDAR_TIMEZONE', 'Asia/Kolkata'),
+    ],
+
+    'google_sheets' => [
+        'credentials' => storage_path(
+            env('GOOGLE_SHEETS_CREDENTIALS')
+        ),
+        'spreadsheet_id' => env('GOOGLE_SHEETS_SPREADSHEET_ID'),
+    ],
+
+
+
 ];

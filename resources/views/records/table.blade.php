@@ -1,8 +1,8 @@
 <div class="table-responsive">
-    <table class="table table-striped align-middle">
-        <thead>
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
             <tr>
-                <th>ID</th>
+                <th>Index</th>
                 <th>Title</th>
                 <th>Status</th>
 
@@ -18,20 +18,31 @@
         <tbody>
             @forelse($records as $record)
                 <tr>
-                    <td>{{ $record->id }}</td>
+                    <td class="text-muted-strong fw-semibold">
+                        {{ $records->firstItem() + $loop->index }}
+                    </td>
 
-                    <td>{{ $record->title }}</td>
+                    <td>
+                        <div class="fw-semibold">{{ $record->title }}</div>
+                        <div class="small text-muted-strong">
+                            ID #{{ $record->id }}
+                        </div>
+                    </td>
 
-                    <td>{{ $record->status }}</td>
+                    <td>
+                        <span class="badge text-bg-{{ $record->status === 'active' ? 'success' : ($record->status === 'inactive' ? 'secondary' : 'warning') }}">
+                            {{ ucfirst($record->status) }}
+                        </span>
+                    </td>
 
                     @if(auth()->user()->isAdmin())
                         <td>
-                            {{ $record->creator->name }}
+                            {{ $record->creator?->name ?? 'Unknown' }}
                             (#{{ $record->created_by }})
                         </td>
 
                         <td>
-                            {{ $record->creator->roles->pluck('name')->implode(', ') }}
+                            {{ $record->creator?->roles?->pluck('name')->implode(', ') ?: 'No Role' }}
                         </td>
                     @endif
 
@@ -39,7 +50,7 @@
                         @can('view', $record)
                             <button
                                 type="button"
-                                class="btn btn-sm btn-outline-info record-view"
+                                class="btn btn-sm btn-outline-secondary record-view"
                                 data-id="{{ $record->id }}"
                             >
                                 View
@@ -71,7 +82,7 @@
                 <tr>
                     <td
                         colspan="{{ auth()->user()->isAdmin() ? 6 : 4 }}"
-                        class="text-center py-4"
+                        class="text-center text-muted-strong py-4"
                     >
                         No records found.
                     </td>
@@ -81,7 +92,7 @@
     </table>
 </div>
 
-<div class="d-flex align-items-center gap-3">
+<div class="d-flex align-items-center gap-3 border-top pt-3 mt-3">
     <button
         type="button"
         class="btn btn-outline-secondary btn-sm record-page"
@@ -91,10 +102,10 @@
         Previous
     </button>
 
-    <span>
+    <span class="text-muted-strong small">
         Page {{ $records->currentPage() }}
         / {{ $records->lastPage() }}
-        · {{ $records->total() }} records
+        &middot; {{ $records->total() }} records
     </span>
 
     <button

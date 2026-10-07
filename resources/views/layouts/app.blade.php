@@ -10,19 +10,110 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Role CRUD</title>
+    <title>Fablead Task</title>
 
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet"
     >
+
+<style>
+    :root {
+        --app-bg: #f5f7f4;
+        --app-ink: #1f2933;
+        --app-muted: #64748b;
+        --app-line: #d9e2dc;
+        --app-accent: #246b5f;
+        --app-accent-dark: #17483f;
+        --app-warm: #b7791f;
+    }
+
+    body {
+        background: var(--app-bg);
+        color: var(--app-ink);
+    }
+
+    .app-navbar {
+        background: #17201d;
+        border-bottom: 3px solid var(--app-accent);
+    }
+
+    .app-shell {
+        max-width: 1480px;
+    }
+
+    .app-sidebar .list-group {
+        border: 1px solid var(--app-line);
+        box-shadow: 0 10px 28px rgba(31, 41, 51, .06);
+    }
+
+    .app-sidebar .list-group-item {
+        border-color: var(--app-line);
+        color: #334155;
+        font-weight: 600;
+    }
+
+    .app-sidebar .list-group-item:hover,
+    .app-sidebar .list-group-item:focus {
+        background: #edf5f1;
+        color: var(--app-accent-dark);
+    }
+
+    .app-sidebar .list-group-item.active {
+        background: var(--app-accent);
+        border-color: var(--app-accent);
+    }
+
+    .workspace-surface {
+        background: #fff;
+        border: 1px solid var(--app-line);
+        box-shadow: 0 14px 36px rgba(31, 41, 51, .07);
+    }
+
+    .text-muted-strong {
+        color: var(--app-muted);
+    }
+
+    .btn-primary {
+        --bs-btn-bg: var(--app-accent);
+        --bs-btn-border-color: var(--app-accent);
+        --bs-btn-hover-bg: var(--app-accent-dark);
+        --bs-btn-hover-border-color: var(--app-accent-dark);
+        --bs-btn-active-bg: var(--app-accent-dark);
+        --bs-btn-active-border-color: var(--app-accent-dark);
+    }
+
+    .btn-outline-primary {
+        --bs-btn-color: var(--app-accent);
+        --bs-btn-border-color: var(--app-accent);
+        --bs-btn-hover-bg: var(--app-accent);
+        --bs-btn-hover-border-color: var(--app-accent);
+        --bs-btn-active-bg: var(--app-accent-dark);
+        --bs-btn-active-border-color: var(--app-accent-dark);
+    }
+
+    .app-fab {
+        position: fixed;
+        right: 1.5rem;
+        bottom: 1.5rem;
+        z-index: 1040;
+        box-shadow: 0 16px 34px rgba(23, 72, 63, .28);
+    }
+
+    @media (max-width: 767.98px) {
+        .app-fab {
+            right: 1rem;
+            bottom: 1rem;
+        }
+    }
+</style>
 </head>
 
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-dark bg-dark px-3">
+<nav class="navbar navbar-dark app-navbar px-3">
     <a class="navbar-brand" href="{{ route('dashboard') }}">
-        Role CRUD
+        Fablead Task
     </a>
 
     @auth
@@ -43,35 +134,28 @@
     @endauth
 </nav>
 
-<div class="container-fluid py-4">
+<div class="container-fluid app-shell py-4">
     <div class="row g-4">
         @auth
-            <aside class="col-md-2">
+            <aside class="col-md-2 app-sidebar">
                 <div class="list-group">
                     <a
-                        class="list-group-item list-group-item-action"
+                        class="list-group-item list-group-item-action {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                         href="{{ route('dashboard') }}"
                     >
                         Dashboard
                     </a>
 
                     <a
-                        class="list-group-item list-group-item-action"
+                        class="list-group-item list-group-item-action {{ request()->routeIs('records.*') ? 'active' : '' }}"
                         href="{{ route('records.page') }}"
                     >
                         Records
                     </a>
 
-                    <a
-                        class="list-group-item list-group-item-action"
-                        href="{{ route('otp.phone') }}"
-                    >
-                        phone Text SMS
-                    </a>
-
                     @can('manage-system')
                         <a
-                            class="list-group-item list-group-item-action"
+                            class="list-group-item list-group-item-action {{ request()->routeIs('admin.*') ? 'active' : '' }}"
                             href="{{ route('admin.index') }}"
                         >
                             Accounts & Roles
@@ -87,6 +171,18 @@
                 class="alert d-none"
                 role="status"
             ></div>
+
+            @if (session('success'))
+                <div class="alert alert-success" role="status">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="alert alert-danger" role="alert">
+                    {{ session('error') }}
+                </div>
+            @endif
 
             @yield('content')
         </main>
