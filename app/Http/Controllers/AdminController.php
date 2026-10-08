@@ -37,10 +37,18 @@ class AdminController extends Controller
      */
     public function index(): View
     {
-        $accounts = User::query()->with('roles')->orderBy('id')->paginate(15);
-        $roles = Role::query()->where('guard_name', 'web')->with('permissions')->orderBy('name')->get();
-        $permissions = config('access.permissions', []);
-        return view('admin.index', ['accounts' => $accounts,'roles' => $roles, 'permissions' => $permissions,]);
+        return view('admin.index', [
+            'accounts' => User::query()
+                ->with('roles')
+                ->orderBy('id')
+                ->paginate(15),
+            'roles' => Role::query()
+                ->where('guard_name', 'web')
+                ->with('permissions')
+                ->orderBy('name')
+                ->get(),
+            'permissions' => config('access.permissions', []),
+        ]);
     }
 
     /**

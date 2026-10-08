@@ -153,6 +153,13 @@
                         Records
                     </a>
 
+                    <a
+                        class="list-group-item list-group-item-action {{ request()->routeIs('customers.*') ? 'active' : '' }}"
+                        href="{{ route('customers.index') }}"
+                    >
+                        Customers
+                    </a>
+
                     @can('manage-system')
                         <a
                             class="list-group-item list-group-item-action {{ request()->routeIs('admin.*') ? 'active' : '' }}"

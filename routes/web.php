@@ -7,6 +7,7 @@ use App\Http\Controllers\RecordController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GoogleSheetsController;
 use App\Http\Controllers\GoogleCalendarController;
+use App\Http\Controllers\FirestoreTestController;
 
 Route::redirect('/', '/dashboard');
 
@@ -72,6 +73,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/records', [RecordController::class, 'page'])
         ->name('records.page');
 
+    // Customers.
+    Route::view('/customers', 'customers.index')
+        ->name('customers.index');
+
+    Route::view('/customers/create', 'customers.create')
+        ->name('customers.create');
+
+    Route::view('/customers/{id}', 'customers.show')
+        ->name('customers.show');
+
+    Route::view('/customers/{id}/edit', 'customers.edit')
+        ->name('customers.edit');
+
     Route::get('/records/data', [RecordController::class, 'index'])
         ->name('records.data');
 
@@ -125,4 +139,7 @@ Route::middleware('auth')->group(function () {
             Route::delete('/roles/{role}', [AdminController::class, 'deleteRole'])
                 ->name('roles.destroy');
         });
+
+        Route::get('/test-firestore', [FirestoreTestController::class, 'store']);
+
 });
