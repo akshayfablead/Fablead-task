@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\ApiController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\WhatsAppController;
 
 Route::middleware('web')->withoutMiddleware([ValidateCsrfToken::class])->name('api.')->group(function () {
     Route::get('/customers', [CustomerController::class, 'index'])
@@ -23,6 +24,8 @@ Route::middleware('web')->withoutMiddleware([ValidateCsrfToken::class])->name('a
 
     Route::get('/', [ApiController::class, 'home'])
         ->name('home');
+
+    Route::post('/whatsapp/send', [WhatsAppController::class, 'send']);
 
     Route::middleware('guest')->group(function () {
         Route::get('/login', [ApiController::class, 'loginForm'])

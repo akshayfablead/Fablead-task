@@ -2,14 +2,18 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FirestoreTestController;
+use App\Http\Controllers\GoogleCalendarController;
+use App\Http\Controllers\GoogleSheetsController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\RecordController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\GoogleSheetsController;
-use App\Http\Controllers\GoogleCalendarController;
-use App\Http\Controllers\FirestoreTestController;
 
 Route::redirect('/', '/dashboard');
+
+Route::get('/.well-known/appspecific/com.chrome.devtools.json', function () {
+    return response()->noContent();
+});
 
 // Guest routes.
 Route::middleware('guest')->group(function () {
@@ -69,6 +73,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/verify-otp/resend', [OtpController::class, 'resend'])
         ->name('otp.resend');
 
+    Route::view('/whatsapp', 'whatsapp.index')
+        ->name('whatsapp.index');
+
     // Records.
     Route::get('/records', [RecordController::class, 'page'])
         ->name('records.page');
@@ -114,10 +121,7 @@ Route::middleware('auth')->group(function () {
         ->name('google.calendar.events.store');
 
     // Admin routes.
-    Route::prefix('admin')
-        ->name('admin.')
-        ->middleware('admin')
-        ->group(function () {
+    Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
             Route::get('/', [AdminController::class, 'index'])
                 ->name('index');
 
@@ -140,6 +144,6 @@ Route::middleware('auth')->group(function () {
                 ->name('roles.destroy');
         });
 
-        Route::get('/test-firestore', [FirestoreTestController::class, 'store']);
+            Route::get('/test-firestore', [FirestoreTestController::class, 'store']);
 
 });
