@@ -54,6 +54,20 @@ In order to ensure that the Laravel community is welcoming to all, please review
 
 If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
+## API Authentication
+
+First-party jQuery AJAX requests use Sanctum's stateful session authentication and CSRF protection. Keep the frontend host in `SANCTUM_STATEFUL_DOMAINS` when deploying the app; do not put OAuth client secrets in browser code.
+
+External OAuth2 clients authenticate with Passport bearer tokens. To initialize Passport in each environment:
+
+```sh
+php artisan migrate
+php artisan passport:keys
+php artisan passport:client
+```
+
+Create an authorization-code client for external applications. Keep the generated Passport keys and client secrets private; the keys are stored under `storage/` and are excluded from Git.
+
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

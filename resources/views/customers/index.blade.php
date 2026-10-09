@@ -3,7 +3,11 @@
 @section('content')
     <link rel="stylesheet" href="{{ asset('css/customers.css') }}">
 
-    <section class="workspace-surface customer-workspace rounded-3 p-3 p-lg-4">
+    <section
+        class="workspace-surface customer-workspace rounded-3 p-3 p-lg-4"
+        data-customer-index-url="{{ route('api.customers.index') }}"
+        data-customer-delete-url="{{ route('api.customers.destroy', ['id' => '__CUSTOMER_ID__']) }}"
+    >
         <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-4">
             <div>
                 <p class="text-uppercase text-muted-strong fw-semibold small mb-1">

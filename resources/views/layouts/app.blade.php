@@ -232,6 +232,13 @@
             }
         });
 
+        const notificationRoutes = {
+            index: @json(route('api.notifications.index')),
+            unreadCount: @json(route('api.notifications.unread-count')),
+            read: @json(route('api.notifications.read', ['id' => '__NOTIFICATION_ID__'])),
+            readAll: @json(route('api.notifications.read-all'))
+        };
+
         // Display success or error messages.
         function notify(message, type = 'success') {
             $('#notice')
@@ -289,7 +296,7 @@
             // Update unread notification badge.
             function loadUnreadCount() {
                 return $.ajax({
-                        url: '/api/notifications/unread-count',
+                        url: notificationRoutes.unreadCount,
                         method: 'GET'
                     })
                     .done(function(response) {
@@ -348,9 +355,10 @@
             // Mark one notification as read.
             function markNotificationAsRead(notification) {
                 return $.ajax({
-                    url: '/api/notifications/' +
-                        encodeURIComponent(notification.id) +
-                        '/read',
+                    url: notificationRoutes.read.replace(
+                        '__NOTIFICATION_ID__',
+                        encodeURIComponent(notification.id)
+                    ),
                     method: 'PATCH'
                 });
             }
@@ -365,7 +373,7 @@
                 );
 
                 return $.ajax({
-                        url: '/api/notifications',
+                        url: notificationRoutes.index,
                         method: 'GET'
                     })
                     .done(function(response) {
@@ -473,7 +481,7 @@
                 $markAllButton.prop('disabled', true);
 
                 $.ajax({
-                        url: '/api/notifications/read-all',
+                        url: notificationRoutes.readAll,
                         method: 'PATCH'
                     })
                     .done(function() {

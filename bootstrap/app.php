@@ -15,6 +15,7 @@ return Application::configure(
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->statefulApi();
         $middleware->alias([
             'admin' => AdminMiddleware::class,
         ]);

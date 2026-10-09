@@ -6,6 +6,7 @@
     <section
         class="workspace-surface customer-workspace rounded-3 p-3 p-lg-4"
         data-customer-id="{{ request()->route('id') }}"
+        data-customer-show-url="{{ route('api.customers.show', ['id' => '__CUSTOMER_ID__']) }}"
     >
         <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-4">
             <div>

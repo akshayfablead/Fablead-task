@@ -1,13 +1,19 @@
 (function (window, document, $) {
     'use strict';
 
-    const apiBase = '/api/customers';
     const alertBox = document.getElementById('customer-alert');
     const tableBody = document.getElementById('customers-table-body');
     const form = document.getElementById('customer-form');
     const details = document.getElementById('customer-details');
-    const workspace = document.querySelector('[data-customer-id]');
+    const workspace = document.querySelector('.customer-workspace');
     const customerId = workspace?.dataset.customerId || null;
+    const routes = {
+        index: workspace?.dataset.customerIndexUrl,
+        store: workspace?.dataset.customerStoreUrl,
+        show: workspace?.dataset.customerShowUrl,
+        update: workspace?.dataset.customerUpdateUrl,
+        delete: workspace?.dataset.customerDeleteUrl,
+    };
 
     function showAlert(message, type = 'success') {
         if (!alertBox) {
@@ -42,7 +48,11 @@
     }
 
     function customerUrl(id) {
-        return `${apiBase}/${encodeURIComponent(id)}`;
+        return routes.show.replace('__CUSTOMER_ID__', encodeURIComponent(id));
+    }
+
+    function routeForCustomer(route, id) {
+        return route.replace('__CUSTOMER_ID__', encodeURIComponent(id));
     }
 
     function escapeHtml(value) {
@@ -140,7 +150,7 @@
         }
 
         $.ajax({
-            url: apiBase,
+            url: routes.index,
             type: 'GET',
             dataType: 'json',
             success: function (response) {
@@ -200,7 +210,9 @@
         const isEdit = form.dataset.mode === 'edit';
 
         $.ajax({
-            url: isEdit ? customerUrl(customerId) : apiBase,
+            url: isEdit
+                ? routeForCustomer(routes.update, customerId)
+                : routes.store,
             type: isEdit ? 'PUT' : 'POST',
             data: JSON.stringify(formData()),
             contentType: 'application/json; charset=UTF-8',
@@ -233,7 +245,7 @@
         hideAlert();
 
         $.ajax({
-            url: customerUrl(id),
+            url: routeForCustomer(routes.delete, id),
             type: 'DELETE',
             dataType: 'json',
             success: function (response) {
