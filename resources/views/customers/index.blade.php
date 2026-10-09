@@ -59,6 +59,5 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/api.js') }}"></script>
     <script src="{{ asset('js/customers.js') }}"></script>
 @endpush

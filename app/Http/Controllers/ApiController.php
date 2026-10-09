@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\RecordRequest;
 use App\Http\Requests\SendOtpRequest;
 use App\Http\Requests\VerifyOtpRequest;
 use App\Models\Record;
@@ -62,7 +61,7 @@ class ApiController extends Controller
     {
         return response()->json([
             'message' => 'Dashboard loaded successfully.',
-            'user' => $request->user()?->load('roles'),
+            'user' => $request->user()->load('roles'),
             'phone_verified' => (bool) session('phone_verified', false),
             'verified_phone' => session('verified_phone'),
         ]);
@@ -93,7 +92,7 @@ class ApiController extends Controller
 
         return response()->json([
             'message' => 'Logged in successfully.',
-            'user' => $request->user()?->load('roles'),
+            'user' => $request->user()->load('roles'),
         ]);
     }
 
@@ -276,7 +275,7 @@ class ApiController extends Controller
         ]);
     }
 
-    public function googleCallback(): JsonResponse
+    public function googleCallback(Request $request): JsonResponse
     {
         $googleUser = Socialite::driver('google')->user();
 
@@ -291,6 +290,7 @@ class ApiController extends Controller
         );
 
         Auth::login($user);
+        $request->session()->regenerate();
 
         return response()->json([
             'message' => 'Logged in with Google successfully.',
@@ -433,33 +433,6 @@ class ApiController extends Controller
         ]);
     }
 
-    public function recordsStore(RecordRequest $request): JsonResponse
-    {
-        return app(RecordController::class)->store($request);
-    }
-
-    public function recordsShow(Record $record): JsonResponse
-    {
-        return app(RecordController::class)->show($record);
-    }
-
-    public function recordsUpdate(
-        RecordRequest $request,
-        Record $record
-    ): JsonResponse {
-        return app(RecordController::class)->update($request, $record);
-    }
-
-    public function recordsDestroy(Record $record): JsonResponse
-    {
-        return app(RecordController::class)->destroy($record);
-    }
-
-    public function googleSheets(): JsonResponse
-    {
-        return app(GoogleSheetsController::class)->index();
-    }
-
     public function googleCalendarConnect(
         Request $request,
         GoogleCalendarService $calendar
@@ -512,16 +485,6 @@ class ApiController extends Controller
         ]);
     }
 
-    public function googleCalendarStoreEvent(
-        Request $request,
-        GoogleCalendarService $calendar
-    ): JsonResponse {
-        return app(GoogleCalendarController::class)->storeEvent(
-            $request,
-            $calendar
-        );
-    }
-
     public function adminIndex(): JsonResponse
     {
         return response()->json([
@@ -536,40 +499,6 @@ class ApiController extends Controller
                 ->get(),
             'permissions' => config('access.permissions', []),
         ]);
-    }
-
-    public function adminStoreAccount(Request $request): JsonResponse
-    {
-        return app(AdminController::class)->storeAccount($request);
-    }
-
-    public function adminUpdateAccount(
-        Request $request,
-        User $user
-    ): JsonResponse {
-        return app(AdminController::class)->updateAccount($request, $user);
-    }
-
-    public function adminDeleteAccount(User $user): JsonResponse
-    {
-        return app(AdminController::class)->deleteAccount($user);
-    }
-
-    public function adminStoreRole(Request $request): JsonResponse
-    {
-        return app(AdminController::class)->storeRole($request);
-    }
-
-    public function adminUpdateRole(
-        Request $request,
-        Role $role
-    ): JsonResponse {
-        return app(AdminController::class)->updateRole($request, $role);
-    }
-
-    public function adminDeleteRole(Role $role): JsonResponse
-    {
-        return app(AdminController::class)->deleteRole($role);
     }
 
     private function registrationRules(): array

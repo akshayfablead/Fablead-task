@@ -1,4 +1,4 @@
-(function (window, document) {
+(function (window, document, $) {
     'use strict';
 
     const directEndpoint = '/api/whatsapp/send';
@@ -63,10 +63,14 @@
         errorBox.textContent = '';
     }
 
-    function validationMessage(error) {
-        const errors = Object.values(error.body?.errors || {}).flat();
+    function showRequestError(xhr, form) {
+        const body = xhr.responseJSON || {};
+        const errors = Object.values(body.errors || {}).flat();
+        const message = errors.length
+            ? errors.join(' ')
+            : body.message || 'Request failed. Please try again.';
 
-        return errors.length ? errors.join(' ') : error.message;
+        setFormErrors(form, message);
     }
 
     function setButtonState(button, isSending, defaultText) {
@@ -117,19 +121,25 @@
         customerContext.classList.remove('d-none');
     }
 
-    async function loadCustomers() {
+    function loadCustomers() {
         if (!customerSelect) {
             return;
         }
 
-        try {
-            const response = await window.crmApi.get(customersEndpoint);
-            customers = response.data || [];
-            renderCustomerOptions();
-        } catch (error) {
-            customerSelect.innerHTML = '<option value="">Customers unavailable</option>';
-            showAlert(error.message, 'danger');
-        }
+        $.ajax({
+            url: customersEndpoint,
+            type: 'GET',
+            dataType: 'json',
+            success: function (response) {
+                customers = response.data || [];
+                renderCustomerOptions();
+            },
+            error: function (xhr) {
+                customerSelect.innerHTML = '<option value="">Customers unavailable</option>';
+                const body = xhr.responseJSON || {};
+                showAlert(body.message || 'Customers could not be loaded.', 'danger');
+            },
+        });
     }
 
     function handleCustomerChange() {
@@ -142,7 +152,7 @@
         showCustomerContext(customer);
     }
 
-    async function submitMessage(event) {
+    function submitMessage(event) {
         event.preventDefault();
         hideAlert();
         clearFormErrors(messageForm);
@@ -150,19 +160,26 @@
         const button = document.getElementById('whatsapp-send-message');
         setButtonState(button, true, 'Send Message');
 
-        try {
-            const response = await window.crmApi.post(directEndpoint, {
+        $.ajax({
+            url: directEndpoint,
+            type: 'POST',
+            data: JSON.stringify({
                 to: selectedPhone(),
                 message: messageForm.elements.message.value.trim(),
-            });
-
-            showAlert(response.message);
-            messageForm.reset();
-        } catch (error) {
-            setFormErrors(messageForm, validationMessage(error));
-        } finally {
-            setButtonState(button, false, 'Send Message');
-        }
+            }),
+            contentType: 'application/json; charset=UTF-8',
+            dataType: 'json',
+            success: function (response) {
+                showAlert(response.message);
+                messageForm.reset();
+            },
+            error: function (xhr) {
+                showRequestError(xhr, messageForm);
+            },
+            complete: function () {
+                setButtonState(button, false, 'Send Message');
+            },
+        });
     }
 
     function templateComponents() {
@@ -181,33 +198,49 @@
         return parsed;
     }
 
-    async function submitTemplate(event) {
+    function submitTemplate(event) {
         event.preventDefault();
         hideAlert();
         clearFormErrors(templateForm);
 
+        let components;
+
+        try {
+            components = templateComponents();
+        } catch (error) {
+            setFormErrors(templateForm, error.message);
+            return;
+        }
+
         const button = document.getElementById('whatsapp-send-template');
         setButtonState(button, true, 'Send Template');
 
-        try {
-            const response = await window.crmApi.post(templateEndpoint, {
+        $.ajax({
+            url: templateEndpoint,
+            type: 'POST',
+            data: JSON.stringify({
                 to: selectedPhone(),
                 template_name: templateForm.elements.template_name.value.trim(),
                 language_code: templateForm.elements.language_code.value.trim() || 'en_US',
-                components: templateComponents(),
-            });
-
-            showAlert(response.message);
-        } catch (error) {
-            setFormErrors(templateForm, validationMessage(error));
-        } finally {
-            setButtonState(button, false, 'Send Template');
-        }
+                components,
+            }),
+            contentType: 'application/json; charset=UTF-8',
+            dataType: 'json',
+            success: function (response) {
+                showAlert(response.message);
+            },
+            error: function (xhr) {
+                showRequestError(xhr, templateForm);
+            },
+            complete: function () {
+                setButtonState(button, false, 'Send Template');
+            },
+        });
     }
 
-    customerSelect?.addEventListener('change', handleCustomerChange);
-    messageForm?.addEventListener('submit', submitMessage);
-    templateForm?.addEventListener('submit', submitTemplate);
+    $(customerSelect).on('change', handleCustomerChange);
+    $(messageForm).on('submit', submitMessage);
+    $(templateForm).on('submit', submitTemplate);
 
     loadCustomers();
-})(window, document);
+})(window, document, window.jQuery);

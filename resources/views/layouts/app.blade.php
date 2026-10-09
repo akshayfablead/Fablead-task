@@ -111,8 +111,43 @@
             Fablead Task
         </a>
 
+
         @auth
             <div class="d-flex align-items-center gap-3 text-white">
+                <div class="dropdown">
+                    <button class="btn btn-outline-light btn-sm position-relative" type="button" id="notificationDropdown"
+                        data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+                        <span aria-hidden="true">&#128276;</span>
+                        <span id="notification-count"
+                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
+                    </button>
+
+                    <div class="dropdown-menu dropdown-menu-end p-0 shadow" style="width: min(360px, 90vw);"
+                        aria-labelledby="notificationDropdown">
+                        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                            <strong>Notifications</strong>
+
+                            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0"
+                                id="mark-all-notifications-read">
+                                Mark all read
+                            </button>
+                        </div>
+
+                        <div id="notification-list" class="list-group list-group-flush"
+                            style="max-height: 350px; overflow-y: auto;">
+                            <div class="p-3 text-muted small">
+                                Loading notifications...
+                            </div>
+                        </div>
+
+                        <div class="p-2 border-top text-center">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="refresh-notifications">
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <span>{{ auth()->user()->name }}</span>
 
                 <form method="POST" action="{{ route('logout') }}">
@@ -124,6 +159,7 @@
                 </form>
             </div>
         @endauth
+
     </nav>
 
     <div class="container-fluid app-shell py-4">
@@ -186,16 +222,17 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // Global AJAX configuration.
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': document.querySelector(
                     'meta[name="csrf-token"]'
                 ).content,
-
                 'Accept': 'application/json'
             }
         });
 
+        // Display success or error messages.
         function notify(message, type = 'success') {
             $('#notice')
                 .removeClass('d-none alert-success alert-danger')
@@ -203,6 +240,7 @@
                 .text(message);
         }
 
+        // Handle common AJAX errors.
         function requestError(xhr, form = null) {
             const body = xhr.responseJSON || {};
 
@@ -214,24 +252,247 @@
                 429: 'Too many requests. Please wait and try again.'
             };
 
-            const message = messages[xhr.status] ||
-                (
-                    xhr.status >= 500 ?
+            const message =
+                messages[xhr.status] ||
+                (xhr.status >= 500 ?
                     'Server error. Please try again.' :
-                    body.message
-                ) ||
+                    body.message) ||
                 'Request failed.';
 
             if (form && xhr.status === 422) {
-                const lines = Object.values(body.errors || {}).flat();
+                const errors = Object.values(body.errors || {}).flat();
 
                 form.find('.form-errors')
                     .removeClass('d-none')
-                    .text(lines.join(' ') || message);
-            } else {
-                notify(message, 'danger');
+                    .text(errors.join(' ') || message);
+
+                return;
             }
+
+            notify(message, 'danger');
         }
+
+        // Notification system.
+        $(function() {
+            const $notificationDropdown = $('#notificationDropdown');
+
+            // Do not run notification code on pages without the bell.
+            if (!$notificationDropdown.length) {
+                return;
+            }
+
+            const $notificationCount = $('#notification-count');
+            const $notificationList = $('#notification-list');
+            const $markAllButton = $('#mark-all-notifications-read');
+            const $refreshButton = $('#refresh-notifications');
+
+            // Update unread notification badge.
+            function loadUnreadCount() {
+                return $.ajax({
+                        url: '/api/notifications/unread-count',
+                        method: 'GET'
+                    })
+                    .done(function(response) {
+                        const count = Number(response.unread_count || 0);
+
+                        $notificationCount
+                            .text(count > 99 ? '99+' : count)
+                            .toggleClass('d-none', count === 0);
+                    })
+                    .fail(function(xhr) {
+                        requestError(xhr);
+                    });
+            }
+
+            // Render the empty notification state.
+            function showEmptyNotifications() {
+                $notificationList.empty().append(
+                    $('<div>', {
+                        class: 'p-3 text-muted small text-center',
+                        text: "You're all caught up."
+                    })
+                );
+            }
+
+            // Render notification loading errors.
+            function showNotificationError() {
+                $notificationList.empty().append(
+                    $('<div>', {
+                        class: 'p-3 text-danger small text-center',
+                        text: 'Could not load notifications. Please try again.'
+                    })
+                );
+            }
+
+            // Open only URLs belonging to the current site.
+            function openNotificationUrl(targetUrl) {
+                if (!targetUrl) {
+                    return;
+                }
+
+                try {
+                    const url = new URL(targetUrl, window.location.origin);
+
+                    if (url.origin !== window.location.origin) {
+                        notify('This notification URL is not allowed.', 'danger');
+                        return;
+                    }
+
+                    window.location.assign(url.href);
+                } catch (error) {
+                    console.error('Invalid notification URL.', error);
+                    notify('Invalid notification URL.', 'danger');
+                }
+            }
+
+            // Mark one notification as read.
+            function markNotificationAsRead(notification) {
+                return $.ajax({
+                    url: '/api/notifications/' +
+                        encodeURIComponent(notification.id) +
+                        '/read',
+                    method: 'PATCH'
+                });
+            }
+
+            // Load notifications from the API.
+            function loadNotifications() {
+                $notificationList.empty().append(
+                    $('<div>', {
+                        class: 'p-3 text-muted small text-center',
+                        text: 'Loading notifications...'
+                    })
+                );
+
+                return $.ajax({
+                        url: '/api/notifications',
+                        method: 'GET'
+                    })
+                    .done(function(response) {
+                        const notifications = response.data || [];
+
+                        $notificationList.empty();
+
+                        if (notifications.length === 0) {
+                            showEmptyNotifications();
+                            loadUnreadCount();
+                            return;
+                        }
+
+                        notifications.forEach(function(notification) {
+                            const data = notification.data || {};
+                            const isUnread = !notification.read_at;
+
+                            const $item = $('<button>', {
+                                type: 'button',
+                                class: 'list-group-item list-group-item-action text-start'
+                            });
+
+                            if (isUnread) {
+                                $item.addClass('list-group-item-light');
+                            }
+
+                            const $title = $('<div>', {
+                                class: 'fw-semibold mb-1',
+                                text: data.title || 'Notification'
+                            });
+
+                            const $message = $('<div>', {
+                                class: 'small text-muted',
+                                text: data.message || ''
+                            });
+
+                            const $date = $('<div>', {
+                                class: 'small text-secondary mt-2',
+                                text: notification.created_at ?
+                                    new Date(
+                                        notification.created_at
+                                    ).toLocaleString() :
+                                    ''
+                            });
+
+                            $item.append($title, $message, $date);
+
+                            // Handle notification click.
+                            $item.on('click', function() {
+                                if (!isUnread) {
+                                    openNotificationUrl(data.url);
+                                    return;
+                                }
+
+                                $item.prop('disabled', true);
+
+                                markNotificationAsRead(notification)
+                                    .done(function() {
+                                        notification.read_at = new Date().toISOString();
+
+                                        $item.removeClass('list-group-item-light');
+                                        $item.prop('disabled', false);
+
+                                        loadUnreadCount();
+                                        openNotificationUrl(data.url);
+                                    })
+                                    .fail(function(xhr) {
+                                        $item.prop('disabled', false);
+                                        requestError(xhr);
+                                    });
+                            });
+
+                            $notificationList.append($item);
+                        });
+
+                        loadUnreadCount();
+                    })
+                    .fail(function(xhr) {
+                        showNotificationError();
+                        requestError(xhr);
+                    });
+            }
+
+            // Load notifications when the dropdown opens.
+            $notificationDropdown.on(
+                'show.bs.dropdown',
+                function() {
+                    loadNotifications();
+                }
+            );
+
+            // Refresh button.
+            $refreshButton.on('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                loadNotifications();
+            });
+
+            // Mark all notifications as read.
+            $markAllButton.on('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                $markAllButton.prop('disabled', true);
+
+                $.ajax({
+                        url: '/api/notifications/read-all',
+                        method: 'PATCH'
+                    })
+                    .done(function() {
+                        notify('All notifications marked as read.');
+
+                        loadUnreadCount();
+                        loadNotifications();
+                    })
+                    .fail(function(xhr) {
+                        requestError(xhr);
+                    })
+                    .always(function() {
+                        $markAllButton.prop('disabled', false);
+                    });
+            });
+
+            // Initial unread count when the page loads.
+            loadUnreadCount();
+        });
     </script>
 
     @stack('scripts')

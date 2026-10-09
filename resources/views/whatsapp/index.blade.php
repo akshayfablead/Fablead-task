@@ -136,6 +136,5 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/api.js') }}"></script>
     <script src="{{ asset('js/whatsapp.js') }}"></script>
 @endpush

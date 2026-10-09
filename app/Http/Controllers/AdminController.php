@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Notifications\CrmNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -58,11 +60,22 @@ class AdminController extends Controller
     {
         [$data, $role, $overrides] = $this->accountData($request);
 
-        DB::transaction(function () use ($data, $role, $overrides): void {
+        DB::transaction(function () use (
+            $data,
+            $role,
+            $overrides
+        ): void {
             $user = User::create($data);
             $user->assignRole($role);
             $user->permission_overrides = $overrides;
             $user->save();
+
+            $user->notify(new CrmNotification(
+                title: 'Account Created',
+                message: 'Your CRM account has been created successfully.',
+                url: '/dashboard',
+                event: 'account.created',
+            ));
         });
 
         return response()->json([
@@ -91,16 +104,18 @@ class AdminController extends Controller
             $overrides
         ): void {
             $user->update($data);
-
             $user->syncRoles([$role]);
-
             $user->permission_overrides = $overrides;
             $user->save();
 
-            $this->invalidateUserSessions(
-                $user,
-                $data
-            );
+            $this->invalidateUserSessions($user, $data);
+
+            $user->notify(new CrmNotification(
+                title: 'Account Updated',
+                message: 'Your CRM account details or access permissions have been updated.',
+                url: '/dashboard',
+                event: 'account.updated',
+            ));
         });
 
         return response()->json([
@@ -127,7 +142,14 @@ class AdminController extends Controller
                 "Delete this account's records first."
             );
 
+            $this->notifyOtherAdministrators(
+                title: 'Account Deleted',
+                message: "The account for {$lockedUser->name} ({$lockedUser->email}) was deleted.",
+                event: 'account.deleted',
+            );
+
             $this->invalidateSessions($lockedUser);
+            $lockedUser->notifications()->delete();
 
             $lockedUser->delete();
         });
@@ -153,6 +175,12 @@ class AdminController extends Controller
             $role->syncPermissions(
                 $data['permissions'] ?? []
             );
+
+            $this->notifyOtherAdministrators(
+                title: 'Role Created',
+                message: "The {$role->name} role has been created.",
+                event: 'role.created',
+            );
         });
 
         return response()->json([
@@ -177,6 +205,8 @@ class AdminController extends Controller
         );
 
         DB::transaction(function () use ($role, $data): void {
+            $affectedUsers = $role->users()->get();
+
             $role->update([
                 'name' => $data['name'],
             ]);
@@ -184,6 +214,15 @@ class AdminController extends Controller
             $role->syncPermissions(
                 $data['permissions'] ?? []
             );
+
+            foreach ($affectedUsers as $user) {
+                $user->notify(new CrmNotification(
+                    title: 'Role Updated',
+                    message: "The {$role->name} role and its permissions have been updated.",
+                    url: '/dashboard',
+                    event: 'role.updated',
+                ));
+            }
         });
 
         return response()->json([
@@ -208,6 +247,12 @@ class AdminController extends Controller
                 $lockedRole->users()->exists(),
                 422,
                 'Reassign accounts before deleting this role.'
+            );
+
+            $this->notifyOtherAdministrators(
+                title: 'Role Deleted',
+                message: "The {$lockedRole->name} role was deleted.",
+                event: 'role.deleted',
             );
 
             $lockedRole->delete();
@@ -440,5 +485,32 @@ class AdminController extends Controller
         DB::table('sessions')
             ->where('user_id', $user->getKey())
             ->delete();
+    }
+
+    private function notifyOtherAdministrators(
+        string $title,
+        string $message,
+        string $event
+    ): void {
+        User::query()
+            ->whereKeyNot(Auth::id())
+            ->whereHas('roles', function ($query): void {
+                $query
+                    ->where('name', 'Admin')
+                    ->where('guard_name', 'web');
+            })
+            ->get()
+            ->each(function (User $administrator) use (
+                $title,
+                $message,
+                $event
+            ): void {
+                $administrator->notify(new CrmNotification(
+                    title: $title,
+                    message: $message,
+                    url: '/admin',
+                    event: $event,
+                ));
+            });
     }
 }

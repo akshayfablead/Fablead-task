@@ -17,86 +17,34 @@
                     Welcome back, {{ auth()->user()->name }}.
                 </h1>
 
-                <p class="text-muted-strong mb-0">
-                    Use the records workspace to review local records and the
-                    synced Google Sheet rows from one place.
-                </p>
+
             </div>
 
             <div class="d-flex flex-wrap align-items-start gap-2">
-                <a
-                    href="{{ route('records.page') }}"
-                    class="btn btn-primary"
-                >
+                <a href="{{ route('records.page') }}" class="btn btn-primary">
                     Open Records
                 </a>
 
                 @can('manage-system')
-                    <a
-                        href="{{ route('admin.index') }}"
-                        class="btn btn-outline-primary"
-                    >
+                    <a href="{{ route('admin.index') }}" class="btn btn-outline-primary">
                         Manage Accounts
                     </a>
                 @endcan
             </div>
         </div>
 
-        <hr class="my-4">
 
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="border rounded-3 p-3 h-100">
-                    <div class="fw-semibold mb-1">Records Workspace</div>
-                    <div class="text-muted-strong small">
-                        Search, filter, create, edit, and review records in a
-                        dense operational table.
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="border rounded-3 p-3 h-100">
-                    <div class="fw-semibold mb-1">Google Sheet View</div>
-                    <div class="text-muted-strong small">
-                        Check the latest sheet rows directly from the records
-                        screen without changing sections.
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="border rounded-3 p-3 h-100">
-                    <div class="fw-semibold mb-1">Account Capability</div>
-                    <div class="text-muted-strong small">
-                        @if(auth()->user()->isAdmin())
-                            You can manage records, accounts, roles, and system
-                            access.
-                        @else
-                            You can work with records according to your assigned
-                            role permissions.
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <hr class="my-4">
 
-        <section
-            class="border rounded-3 p-3 p-lg-4"
-            aria-labelledby="google-calendar-event-title"
-        >
+        <section class="border rounded-3 p-3 p-lg-4" aria-labelledby="google-calendar-event-title">
             <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
                 <div>
                     <p class="text-uppercase text-muted-strong fw-semibold small mb-2">
                         Scheduling
                     </p>
 
-                    <h2
-                        id="google-calendar-event-title"
-                        class="h5 mb-1"
-                    >
+                    <h2 id="google-calendar-event-title" class="h5 mb-1">
                         Google Calendar Event
                     </h2>
 
@@ -115,10 +63,7 @@
                             Connection required
                         </span>
 
-                        <a
-                            href="{{ route('google.calendar.connect') }}"
-                            class="btn btn-outline-primary btn-sm"
-                        >
+                        <a href="{{ route('google.calendar.connect') }}" class="btn btn-outline-primary btn-sm">
                             Connect Google Calendar
                         </a>
                     @endif
@@ -132,33 +77,19 @@
             @endunless
 
             <form id="google-calendar-event-form" novalidate>
-                <div
-                    class="alert alert-danger form-errors d-none"
-                    role="alert"
-                ></div>
+                <div class="alert alert-danger form-errors d-none" role="alert"></div>
 
-                <div
-                    class="alert alert-success d-none"
-                    id="calendar-event-success"
-                    role="status"
-                ></div>
+                <div class="alert alert-success d-none" id="calendar-event-success" role="status"></div>
 
-                <fieldset @disabled(! $googleCalendarConnected)>
+                <fieldset @disabled(!$googleCalendarConnected)>
                     <div class="row g-3">
                         <div class="col-12">
                             <label for="calendar-summary" class="form-label fw-semibold">
                                 Event title
                             </label>
 
-                            <input
-                                type="text"
-                                class="form-control"
-                                id="calendar-summary"
-                                name="summary"
-                                maxlength="255"
-                                required
-                                placeholder="Follow up on client records"
-                            >
+                            <input type="text" class="form-control" id="calendar-summary" name="summary" maxlength="255"
+                                required placeholder="Follow up on client records">
                         </div>
 
                         <div class="col-md-6">
@@ -166,13 +97,8 @@
                                 Start
                             </label>
 
-                            <input
-                                type="datetime-local"
-                                class="form-control"
-                                id="calendar-start-at"
-                                name="start_at"
-                                required
-                            >
+                            <input type="datetime-local" class="form-control" id="calendar-start-at" name="start_at"
+                                required>
                         </div>
 
                         <div class="col-md-6">
@@ -180,13 +106,7 @@
                                 End
                             </label>
 
-                            <input
-                                type="datetime-local"
-                                class="form-control"
-                                id="calendar-end-at"
-                                name="end_at"
-                                required
-                            >
+                            <input type="datetime-local" class="form-control" id="calendar-end-at" name="end_at" required>
                         </div>
 
                         <div class="col-md-6">
@@ -194,14 +114,8 @@
                                 Location
                             </label>
 
-                            <input
-                                type="text"
-                                class="form-control"
-                                id="calendar-location"
-                                name="location"
-                                maxlength="255"
-                                placeholder="Office, Meet link, or client site"
-                            >
+                            <input type="text" class="form-control" id="calendar-location" name="location"
+                                maxlength="255" placeholder="Office, Meet link, or client site">
                         </div>
 
                         <div class="col-md-6">
@@ -209,13 +123,8 @@
                                 Attendees
                             </label>
 
-                            <input
-                                type="text"
-                                class="form-control"
-                                id="calendar-attendees"
-                                name="attendees"
-                                placeholder="alex@example.com, priya@example.com"
-                            >
+                            <input type="text" class="form-control" id="calendar-attendees" name="attendees"
+                                placeholder="alex@example.com, priya@example.com">
 
                             <div class="form-text">
                                 Separate multiple email addresses with commas.
@@ -227,14 +136,8 @@
                                 Description
                             </label>
 
-                            <textarea
-                                class="form-control"
-                                id="calendar-description"
-                                name="description"
-                                rows="4"
-                                maxlength="5000"
-                                placeholder="Add agenda notes, record context, or next steps."
-                            ></textarea>
+                            <textarea class="form-control" id="calendar-description" name="description" rows="4" maxlength="5000"
+                                placeholder="Add agenda notes, record context, or next steps."></textarea>
                         </div>
                     </div>
 
@@ -243,11 +146,7 @@
                             Events are created on your primary Google Calendar.
                         </p>
 
-                        <button
-                            type="submit"
-                            class="btn btn-primary"
-                            id="calendar-event-save"
-                        >
+                        <button type="submit" class="btn btn-primary" id="calendar-event-save">
                             Create Event
                         </button>
                     </div>
@@ -259,12 +158,12 @@
 
 @push('scripts')
     <script>
-        $(function () {
+        $(function() {
             const form = $('#google-calendar-event-form');
             const submitButton = $('#calendar-event-save');
             const successBox = $('#calendar-event-success');
 
-            form.on('submit', function (event) {
+            form.on('submit', function(event) {
                 event.preventDefault();
 
                 form.find('.form-errors')
@@ -278,7 +177,7 @@
                 const attendees = $('#calendar-attendees')
                     .val()
                     .split(',')
-                    .map(function (email) {
+                    .map(function(email) {
                         return email.trim();
                     })
                     .filter(Boolean);
@@ -298,11 +197,11 @@
                     .text('Creating...');
 
                 $.ajax({
-                    method: 'POST',
-                    url: '{{ route('google.calendar.events.store') }}',
-                    data: payload
-                })
-                    .done(function (response) {
+                        method: 'POST',
+                        url: '{{ route('google.calendar.events.store') }}',
+                        data: payload
+                    })
+                    .done(function(response) {
                         const eventData = response.event || {};
                         const summary = eventData.summary || payload.summary;
 
@@ -322,10 +221,10 @@
 
                         form[0].reset();
                     })
-                    .fail(function (xhr) {
+                    .fail(function(xhr) {
                         requestError(xhr, form);
                     })
-                    .always(function () {
+                    .always(function() {
                         submitButton
                             .prop('disabled', false)
                             .text('Create Event');

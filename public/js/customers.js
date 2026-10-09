@@ -1,4 +1,4 @@
-(function (window, document) {
+(function (window, document, $) {
     'use strict';
 
     const apiBase = '/api/customers';
@@ -58,19 +58,24 @@
         return Object.fromEntries(new FormData(form).entries());
     }
 
-    function showFormErrors(error) {
-        const errorBox = form?.querySelector('.form-errors');
+    function showRequestError(xhr, targetForm = null) {
+        const body = xhr.responseJSON || {};
+        const errors = Object.values(body.errors || {}).flat();
+        const message = errors.length
+            ? errors.join(' ')
+            : body.message || 'Request failed. Please try again.';
 
-        if (!errorBox) {
-            return;
+        if (targetForm && xhr.status === 422) {
+            const errorBox = targetForm.querySelector('.form-errors');
+
+            if (errorBox) {
+                errorBox.classList.remove('d-none');
+                errorBox.textContent = message;
+                return;
+            }
         }
 
-        const errors = Object.values(error.body?.errors || {}).flat();
-
-        errorBox.classList.remove('d-none');
-        errorBox.textContent = errors.length
-            ? errors.join(' ')
-            : error.message;
+        showAlert(message, 'danger');
     }
 
     function setSaving(isSaving) {
@@ -88,121 +93,135 @@
         );
     }
 
-    async function loadCustomers() {
+    function renderCustomers(customers) {
+        if (!customers.length) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted-strong py-4">
+                        No customers found.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        tableBody.innerHTML = customers.map((customer) => `
+            <tr>
+                <td>
+                    <div class="fw-semibold">${escapeHtml(customer.name)}</div>
+                    <div class="small text-muted-strong">${escapeHtml(customer.id)}</div>
+                </td>
+                <td>${escapeHtml(customer.email)}</td>
+                <td>${escapeHtml(customer.phone)}</td>
+                <td>${escapeHtml(formatDate(customer.created_at))}</td>
+                <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-outline-secondary" href="/customers/${encodeURIComponent(customer.id)}">
+                        View
+                    </a>
+                    <a class="btn btn-sm btn-outline-primary" href="/customers/${encodeURIComponent(customer.id)}/edit">
+                        Edit
+                    </a>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger customer-delete"
+                        data-id="${escapeHtml(customer.id)}"
+                    >
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function loadCustomers() {
         if (!tableBody) {
             return;
         }
 
-        try {
-            const response = await window.crmApi.get(apiBase);
-            const customers = response.data || [];
-
-            if (!customers.length) {
+        $.ajax({
+            url: apiBase,
+            type: 'GET',
+            dataType: 'json',
+            success: function (response) {
+                renderCustomers(response.data || []);
+            },
+            error: function (xhr) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center text-muted-strong py-4">
-                            No customers found.
+                        <td colspan="5" class="text-center text-danger py-4">
+                            Customers could not be loaded.
                         </td>
                     </tr>
                 `;
-
-                return;
-            }
-
-            tableBody.innerHTML = customers.map((customer) => `
-                <tr>
-                    <td>
-                        <div class="fw-semibold">${escapeHtml(customer.name)}</div>
-                        <div class="small text-muted-strong">${escapeHtml(customer.id)}</div>
-                    </td>
-                    <td>${escapeHtml(customer.email)}</td>
-                    <td>${escapeHtml(customer.phone)}</td>
-                    <td>${escapeHtml(formatDate(customer.created_at))}</td>
-                    <td class="text-end text-nowrap">
-                        <a class="btn btn-sm btn-outline-secondary" href="/customers/${encodeURIComponent(customer.id)}">
-                            View
-                        </a>
-                        <a class="btn btn-sm btn-outline-primary" href="/customers/${encodeURIComponent(customer.id)}/edit">
-                            Edit
-                        </a>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-danger customer-delete"
-                            data-id="${escapeHtml(customer.id)}"
-                        >
-                            Delete
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        } catch (error) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center text-danger py-4">
-                        Customers could not be loaded.
-                    </td>
-                </tr>
-            `;
-            showAlert(error.message, 'danger');
-        }
+                showRequestError(xhr);
+            },
+        });
     }
 
-    async function loadCustomer() {
+    function loadCustomer() {
         if (!customerId || (!details && !form)) {
             return;
         }
 
-        try {
-            const response = await window.crmApi.get(customerUrl(customerId));
-            const customer = response.data;
+        $.ajax({
+            url: customerUrl(customerId),
+            type: 'GET',
+            dataType: 'json',
+            success: function (response) {
+                const customer = response.data;
 
-            if (details) {
-                details.querySelector('[data-field="name"]').textContent = customer.name || '-';
-                details.querySelector('[data-field="email"]').textContent = customer.email || '-';
-                details.querySelector('[data-field="phone"]').textContent = customer.phone || '-';
-                details.querySelector('[data-field="created_at"]').textContent = formatDate(customer.created_at);
-                details.querySelector('[data-field="updated_at"]').textContent = formatDate(customer.updated_at);
-            }
+                if (details) {
+                    details.querySelector('[data-field="name"]').textContent = customer.name || '-';
+                    details.querySelector('[data-field="email"]').textContent = customer.email || '-';
+                    details.querySelector('[data-field="phone"]').textContent = customer.phone || '-';
+                    details.querySelector('[data-field="created_at"]').textContent = formatDate(customer.created_at);
+                    details.querySelector('[data-field="updated_at"]').textContent = formatDate(customer.updated_at);
+                }
 
-            if (form) {
-                form.elements.name.value = customer.name || '';
-                form.elements.email.value = customer.email || '';
-                form.elements.phone.value = customer.phone || '';
-            }
-        } catch (error) {
-            showAlert(error.message, 'danger');
-        }
+                if (form) {
+                    form.elements.name.value = customer.name || '';
+                    form.elements.email.value = customer.email || '';
+                    form.elements.phone.value = customer.phone || '';
+                }
+            },
+            error: function (xhr) {
+                showRequestError(xhr);
+            },
+        });
     }
 
-    async function submitCustomer(event) {
+    function submitCustomer(event) {
         event.preventDefault();
         hideAlert();
         form.querySelector('.form-errors')?.classList.add('d-none');
         setSaving(true);
 
-        try {
-            const isEdit = form.dataset.mode === 'edit';
-            const response = isEdit
-                ? await window.crmApi.put(customerUrl(customerId), formData())
-                : await window.crmApi.post(apiBase, formData());
+        const isEdit = form.dataset.mode === 'edit';
 
-            showAlert(response.message);
+        $.ajax({
+            url: isEdit ? customerUrl(customerId) : apiBase,
+            type: isEdit ? 'PUT' : 'POST',
+            data: JSON.stringify(formData()),
+            contentType: 'application/json; charset=UTF-8',
+            dataType: 'json',
+            success: function (response) {
+                showAlert(response.message);
 
-            if (!isEdit) {
-                form.reset();
-            }
-        } catch (error) {
-            if (error.status === 422) {
-                showFormErrors(error);
-            } else {
-                showAlert(error.message, 'danger');
-            }
-        } finally {
-            setSaving(false);
-        }
+                if (!isEdit) {
+                    form.reset();
+                }
+            },
+            error: function (xhr) {
+                showRequestError(xhr, form);
+            },
+            complete: function () {
+                setSaving(false);
+            },
+        });
     }
 
-    async function deleteCustomer(button) {
+    function deleteCustomer(button) {
         const id = button.dataset.id;
 
         if (!id || !window.confirm('Delete this customer permanently?')) {
@@ -213,29 +232,30 @@
         button.textContent = 'Deleting...';
         hideAlert();
 
-        try {
-            const response = await window.crmApi.delete(customerUrl(id));
-            showAlert(response.message);
-            await loadCustomers();
-        } catch (error) {
-            showAlert(error.message, 'danger');
-            button.disabled = false;
-            button.textContent = 'Delete';
-        }
+        $.ajax({
+            url: customerUrl(id),
+            type: 'DELETE',
+            dataType: 'json',
+            success: function (response) {
+                showAlert(response.message);
+                loadCustomers();
+            },
+            error: function (xhr) {
+                showRequestError(xhr);
+                button.disabled = false;
+                button.textContent = 'Delete';
+            },
+        });
     }
 
-    document.addEventListener('click', function (event) {
-        const button = event.target.closest('.customer-delete');
-
-        if (button) {
-            deleteCustomer(button);
-        }
+    $(document).on('click', '.customer-delete', function () {
+        deleteCustomer(this);
     });
 
     if (form) {
-        form.addEventListener('submit', submitCustomer);
+        $(form).on('submit', submitCustomer);
     }
 
     loadCustomers();
     loadCustomer();
-})(window, document);
+})(window, document, window.jQuery);

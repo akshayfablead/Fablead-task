@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\FirestoreTestController;
 use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\GoogleSheetsController;
 use App\Http\Controllers\OtpController;
@@ -15,8 +14,7 @@ Route::get('/.well-known/appspecific/com.chrome.devtools.json', function () {
     return response()->noContent();
 });
 
-// Guest routes.
-Route::middleware('guest')->group(function () {
+Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'create'])
         ->name('login');
 
@@ -49,49 +47,36 @@ Route::middleware('guest')->group(function () {
         ->name('google.callback');
 });
 
-// Authenticated routes.
-Route::middleware('auth')->group(function () {
+Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'destroy'])
         ->name('logout');
 
     Route::view('/dashboard', 'dashboard')
         ->name('dashboard');
 
-    // OTP routes.
     Route::get('/phone', [OtpController::class, 'create'])
         ->name('otp.phone');
 
     Route::post('/phone/send-otp', [OtpController::class, 'send'])
+        ->middleware('throttle:6,1')
         ->name('otp.send');
 
     Route::get('/verify-otp', [OtpController::class, 'showVerify'])
         ->name('otp.verify');
 
     Route::post('/verify-otp', [OtpController::class, 'verify'])
+        ->middleware('throttle:6,1')
         ->name('otp.verify.submit');
 
     Route::post('/verify-otp/resend', [OtpController::class, 'resend'])
+        ->middleware('throttle:3,1')
         ->name('otp.resend');
 
     Route::view('/whatsapp', 'whatsapp.index')
         ->name('whatsapp.index');
 
-    // Records.
     Route::get('/records', [RecordController::class, 'page'])
         ->name('records.page');
-
-    // Customers.
-    Route::view('/customers', 'customers.index')
-        ->name('customers.index');
-
-    Route::view('/customers/create', 'customers.create')
-        ->name('customers.create');
-
-    Route::view('/customers/{id}', 'customers.show')
-        ->name('customers.show');
-
-    Route::view('/customers/{id}/edit', 'customers.edit')
-        ->name('customers.edit');
 
     Route::get('/records/data', [RecordController::class, 'index'])
         ->name('records.data');
@@ -108,6 +93,18 @@ Route::middleware('auth')->group(function () {
     Route::delete('/records/{record}', [RecordController::class, 'destroy'])
         ->name('records.destroy');
 
+    Route::view('/customers', 'customers.index')
+        ->name('customers.index');
+
+    Route::view('/customers/create', 'customers.create')
+        ->name('customers.create');
+
+    Route::view('/customers/{id}', 'customers.show')
+        ->name('customers.show');
+
+    Route::view('/customers/{id}/edit', 'customers.edit')
+        ->name('customers.edit');
+
     Route::get('/google-sheets', [GoogleSheetsController::class, 'index'])
         ->name('google-sheets.index');
 
@@ -120,8 +117,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/google-calendar/events', [GoogleCalendarController::class, 'storeEvent'])
         ->name('google.calendar.events.store');
 
-    // Admin routes.
-    Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
+    Route::prefix('admin')
+        ->name('admin.')
+        ->middleware('admin')
+        ->group(function (): void {
             Route::get('/', [AdminController::class, 'index'])
                 ->name('index');
 
@@ -143,7 +142,4 @@ Route::middleware('auth')->group(function () {
             Route::delete('/roles/{role}', [AdminController::class, 'deleteRole'])
                 ->name('roles.destroy');
         });
-
-            Route::get('/test-firestore', [FirestoreTestController::class, 'store']);
-
 });

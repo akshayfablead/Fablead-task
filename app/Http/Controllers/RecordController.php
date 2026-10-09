@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\RecordRequest;
 use App\Models\Record;
+use App\Models\User;
 use App\Services\GoogleSheetsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use App\Notifications\CrmNotification;
 
 class RecordController extends Controller
 {
@@ -84,53 +86,86 @@ class RecordController extends Controller
     /**
      * Store a new record.
      */
-    public function store(RecordRequest $request): JsonResponse
-    {
-        $record = $request->user()
-            ->records()
-            ->create($request->validated());
 
-        try {
-            app(GoogleSheetsService::class)->append(
-                'Sheet1!A:F',
-                [
-                    $record->id,
-                    $record->title,
-                    $record->description,
-                    $record->status,
-                    $request->user()->name,
-                    $record->created_at?->toDateTimeString(),
-                ]
-            );
-        } catch (\Throwable $exception) {
-            Log::warning('Record could not be appended to Google Sheet.', [
-                'record_id' => $record->id,
-                'message' => $exception->getMessage(),
-            ]);
-        }
 
-        return response()->json([
-            'message' => 'Record created successfully.',
-        ], 201);
-    }
+public function store(RecordRequest $request): JsonResponse
+{
+    $record = $request->user()
+        ->records()
+        ->create($request->validated());
 
-    /**
-     * Update an existing record.
-     */
-    public function update(
-        RecordRequest $request,
-        Record $record
-    ): JsonResponse {
-        Gate::authorize('update', $record);
-
-        $record->update(
-            $request->validated()
+    try {
+        app(GoogleSheetsService::class)->append(
+            'Sheet1!A:F',
+            [
+                $record->id,
+                $record->title,
+                $record->description,
+                $record->status,
+                $request->user()->name,
+                $record->created_at?->toDateTimeString(),
+            ]
         );
-
-        return response()->json([
-            'message' => 'Record updated successfully.',
+    } catch (\Throwable $exception) {
+        Log::warning('Record could not be appended to Google Sheet.', [
+            'record_id' => $record->id,
+            'message' => $exception->getMessage(),
         ]);
     }
+
+    User::query()
+        ->whereKeyNot($request->user()->getAuthIdentifier())
+        ->whereHas('roles', function ($query) {
+            $query
+                ->where('guard_name', 'web')
+                ->whereIn('name', ['Admin', 'Manager']);
+        })
+        ->each(function (User $user) use ($record) {
+            $user->notify(new CrmNotification(
+                title: 'New Record Created',
+                message: "Record '{$record->title}' has been created.",
+                url: '/records',
+                event: 'record.created',
+            ));
+        });
+
+    return response()->json([
+        'message' => 'Record created successfully.',
+    ], 201);
+}
+
+/**
+ * Update an existing record.
+ */
+public function update(
+    RecordRequest $request,
+    Record $record
+): JsonResponse {
+    Gate::authorize('update', $record);
+
+    $record->update($request->validated());
+
+    User::query()
+        ->whereKeyNot($request->user()->getAuthIdentifier())
+        ->whereHas('roles', function ($query) {
+            $query
+                ->where('guard_name', 'web')
+                ->whereIn('name', ['Admin', 'Manager']);
+        })
+        ->each(function (User $user) use ($record) {
+            $user->notify(new CrmNotification(
+                title: 'Record Updated',
+                message: "Record '{$record->title}' has been updated.",
+                url: '/records',
+                event: 'record.updated',
+            ));
+        });
+
+    return response()->json([
+        'message' => 'Record updated successfully.',
+    ]);
+}
+
 
     /**
      * Delete an existing record.
@@ -278,4 +313,3 @@ class RecordController extends Controller
             );
     }
 }
-
