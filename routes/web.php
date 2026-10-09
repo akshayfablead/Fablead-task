@@ -2,16 +2,19 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GoogleCalendarController;
+use App\Http\Controllers\GoogleSheetsController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\RecordController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\GoogleSheetsController;
-use App\Http\Controllers\GoogleCalendarController;
 
 Route::redirect('/', '/dashboard');
 
-// Guest routes.
-Route::middleware('guest')->group(function () {
+Route::get('/.well-known/appspecific/com.chrome.devtools.json', function () {
+    return response()->noContent();
+});
+
+Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'create'])
         ->name('login');
 
@@ -44,31 +47,34 @@ Route::middleware('guest')->group(function () {
         ->name('google.callback');
 });
 
-// Authenticated routes.
-Route::middleware('auth')->group(function () {
+Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'destroy'])
         ->name('logout');
 
     Route::view('/dashboard', 'dashboard')
         ->name('dashboard');
 
-    // OTP routes.
     Route::get('/phone', [OtpController::class, 'create'])
         ->name('otp.phone');
 
     Route::post('/phone/send-otp', [OtpController::class, 'send'])
+        ->middleware('throttle:6,1')
         ->name('otp.send');
 
     Route::get('/verify-otp', [OtpController::class, 'showVerify'])
         ->name('otp.verify');
 
     Route::post('/verify-otp', [OtpController::class, 'verify'])
+        ->middleware('throttle:6,1')
         ->name('otp.verify.submit');
 
     Route::post('/verify-otp/resend', [OtpController::class, 'resend'])
+        ->middleware('throttle:3,1')
         ->name('otp.resend');
 
-    // Records.
+    Route::view('/whatsapp', 'whatsapp.index')
+        ->name('whatsapp.index');
+
     Route::get('/records', [RecordController::class, 'page'])
         ->name('records.page');
 
@@ -87,6 +93,18 @@ Route::middleware('auth')->group(function () {
     Route::delete('/records/{record}', [RecordController::class, 'destroy'])
         ->name('records.destroy');
 
+    Route::view('/customers', 'customers.index')
+        ->name('customers.index');
+
+    Route::view('/customers/create', 'customers.create')
+        ->name('customers.create');
+
+    Route::view('/customers/{id}', 'customers.show')
+        ->name('customers.show');
+
+    Route::view('/customers/{id}/edit', 'customers.edit')
+        ->name('customers.edit');
+
     Route::get('/google-sheets', [GoogleSheetsController::class, 'index'])
         ->name('google-sheets.index');
 
@@ -99,11 +117,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/google-calendar/events', [GoogleCalendarController::class, 'storeEvent'])
         ->name('google.calendar.events.store');
 
-    // Admin routes.
     Route::prefix('admin')
         ->name('admin.')
         ->middleware('admin')
-        ->group(function () {
+        ->group(function (): void {
             Route::get('/', [AdminController::class, 'index'])
                 ->name('index');
 

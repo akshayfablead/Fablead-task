@@ -1,0 +1,43 @@
+.whatsapp-workspace {
+    max-width: 1120px;
+}
+
+.whatsapp-status .badge {
+    color: var(--app-muted);
+    font-weight: 700;
+}
+
+.whatsapp-panel,
+.whatsapp-tab-content {
+    border: 1px solid var(--app-line);
+    background: #fbfcfb;
+}
+
+.whatsapp-panel {
+    height: 100%;
+}
+
+.customer-context {
+    border: 1px solid var(--app-line);
+    background: #fff;
+}
+
+#whatsapp-tabs .nav-link {
+    color: #334155;
+    font-weight: 700;
+}
+
+#whatsapp-tabs .nav-link.active {
+    color: var(--app-accent-dark);
+}
+
+.whatsapp-tab-content {
+    border-top: 0;
+}
+
+@media (max-width: 575.98px) {
+    .whatsapp-workspace {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+}
