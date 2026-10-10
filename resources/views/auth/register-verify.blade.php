@@ -370,8 +370,8 @@
             button.prop('disabled', true).text(button.data('loading-text'));
 
             $.ajax({
-                method: form.attr('method'),
-                url: form.attr('action'),
+                method: 'POST',
+                url: @json(route('register.verify.submit')),
                 data: form.serialize(),
                 success(response) {
                     if (response.redirect) {
@@ -400,8 +400,8 @@
             button.prop('disabled', true).text(button.data('loading-text'));
 
             $.ajax({
-                method: form.attr('method'),
-                url: form.attr('action'),
+                method: 'POST',
+                url: @json(route('register.resend-otp')),
                 data: form.serialize(),
                 success(response) {
                     notify(response.message || 'A new OTP has been sent.');

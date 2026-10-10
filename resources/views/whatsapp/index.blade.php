@@ -3,7 +3,12 @@
 @section('content')
     <link rel="stylesheet" href="{{ asset('css/whatsapp.css') }}">
 
-    <section class="workspace-surface whatsapp-workspace rounded-3 p-3 p-lg-4">
+    <section
+        class="workspace-surface whatsapp-workspace rounded-3 p-3 p-lg-4"
+        data-customers-url="{{ route('api.customers.index') }}"
+        data-whatsapp-send-url="{{ route('api.whatsapp.send') }}"
+        data-whatsapp-template-url="{{ route('api.whatsapp.send-template') }}"
+    >
         <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
             <div>
                 <h1 class="h3 mb-1">WhatsApp</h1>
