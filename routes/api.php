@@ -10,9 +10,8 @@ use App\Http\Controllers\RecordController;
 use App\Http\Controllers\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('web')
-    ->name('api.')
-    ->group(function (): void {
+Route::name('api.')->group(function (): void {
+    Route::middleware('web')->group(function (): void {
         Route::get('/', [ApiController::class, 'home'])
             ->name('home');
 
@@ -77,90 +76,95 @@ Route::middleware('web')
             Route::get('/records', [ApiController::class, 'recordsPage'])
                 ->name('records.page');
 
-            Route::get('/records/data', [ApiController::class, 'recordsIndex'])
-                ->name('records.data');
-
-            Route::post('/records', [RecordController::class, 'store'])
-                ->name('records.store');
-
-            Route::get('/records/{record}', [RecordController::class, 'show'])
-                ->name('records.show');
-
-            Route::put('/records/{record}', [RecordController::class, 'update'])
-                ->name('records.update');
-
-            Route::delete('/records/{record}', [RecordController::class, 'destroy'])
-                ->name('records.destroy');
-
-            Route::get('/customers', [CustomerController::class, 'index'])
-                ->name('customers.index');
-
-            Route::post('/customers', [CustomerController::class, 'store'])
-                ->name('customers.store');
-
-            Route::get('/customers/{id}', [CustomerController::class, 'show'])
-                ->name('customers.show');
-
-            Route::put('/customers/{id}', [CustomerController::class, 'update'])
-                ->name('customers.update');
-
-            Route::delete('/customers/{id}', [CustomerController::class, 'destroy'])
-                ->name('customers.destroy');
-
-            Route::post('/whatsapp/send', [WhatsAppController::class, 'send'])
-                ->name('whatsapp.send');
-
-            Route::post('/whatsapp/send-template', [WhatsAppController::class, 'sendTemplate'])
-                ->name('whatsapp.send-template');
-
-            Route::get('/notifications', [NotificationController::class, 'index'])
-                ->name('notifications.index');
-
-            Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])
-                ->name('notifications.unread-count');
-
-            Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])
-                ->name('notifications.read');
-
-            Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
-                ->name('notifications.read-all');
-
-            Route::get('/google-sheets', [GoogleSheetsController::class, 'index'])
-                ->name('google-sheets.index');
-
             Route::get('/auth/google/calendar/connect', [ApiController::class, 'googleCalendarConnect'])
                 ->name('google.calendar.connect');
 
             Route::get('/auth/google/calendar/callback', [ApiController::class, 'googleCalendarCallback'])
                 ->name('google.calendar.callback');
 
-            Route::post('/google-calendar/events', [GoogleCalendarController::class, 'storeEvent'])
-                ->name('google.calendar.events.store');
-
-            Route::prefix('admin')
-                ->name('admin.')
-                ->middleware('admin')
-                ->group(function (): void {
-                    Route::get('/', [ApiController::class, 'adminIndex'])
-                        ->name('index');
-
-                    Route::post('/accounts', [AdminController::class, 'storeAccount'])
-                        ->name('accounts.store');
-
-                    Route::put('/accounts/{user}', [AdminController::class, 'updateAccount'])
-                        ->name('accounts.update');
-
-                    Route::delete('/accounts/{user}', [AdminController::class, 'deleteAccount'])
-                        ->name('accounts.destroy');
-
-                    Route::post('/roles', [AdminController::class, 'storeRole'])
-                        ->name('roles.store');
-
-                    Route::put('/roles/{role}', [AdminController::class, 'updateRole'])
-                        ->name('roles.update');
-
-                    Route::delete('/roles/{role}', [AdminController::class, 'deleteRole'])
-                        ->name('roles.destroy');
-                });
+            Route::middleware('admin')->prefix('admin')->name('admin.')->group(function (): void {
+                Route::get('/', [ApiController::class, 'adminIndex'])
+                    ->name('index');
+            });
         });
     });
+
+    Route::middleware('auth:sanctum,api')->group(function (): void {
+        Route::get('/records/data', [ApiController::class, 'recordsIndex'])
+            ->name('records.data');
+
+        Route::post('/records', [RecordController::class, 'store'])
+            ->name('records.store');
+
+        Route::get('/records/{record}', [RecordController::class, 'show'])
+            ->name('records.show');
+
+        Route::put('/records/{record}', [RecordController::class, 'update'])
+            ->name('records.update');
+
+        Route::delete('/records/{record}', [RecordController::class, 'destroy'])
+            ->name('records.destroy');
+
+        Route::get('/customers', [CustomerController::class, 'index'])
+            ->name('customers.index');
+
+        Route::post('/customers', [CustomerController::class, 'store'])
+            ->name('customers.store');
+
+        Route::get('/customers/{id}', [CustomerController::class, 'show'])
+            ->name('customers.show');
+
+        Route::put('/customers/{id}', [CustomerController::class, 'update'])
+            ->name('customers.update');
+
+        Route::delete('/customers/{id}', [CustomerController::class, 'destroy'])
+            ->name('customers.destroy');
+
+        Route::post('/whatsapp/send', [WhatsAppController::class, 'send'])
+            ->name('whatsapp.send');
+
+        Route::post('/whatsapp/send-template', [WhatsAppController::class, 'sendTemplate'])
+            ->name('whatsapp.send-template');
+
+        Route::get('/notifications', [NotificationController::class, 'index'])
+            ->name('notifications.index');
+
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])
+            ->name('notifications.unread-count');
+
+        Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])
+            ->name('notifications.read');
+
+        Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+            ->name('notifications.read-all');
+
+        Route::get('/google-sheets', [GoogleSheetsController::class, 'index'])
+            ->name('google-sheets.index');
+
+        Route::post('/google-calendar/events', [GoogleCalendarController::class, 'storeEvent'])
+            ->name('google.calendar.events.store');
+
+        Route::prefix('admin')
+            ->name('admin.')
+            ->middleware('admin')
+            ->group(function (): void {
+                Route::post('/accounts', [AdminController::class, 'storeAccount'])
+                    ->name('accounts.store');
+
+                Route::put('/accounts/{user}', [AdminController::class, 'updateAccount'])
+                    ->name('accounts.update');
+
+                Route::delete('/accounts/{user}', [AdminController::class, 'deleteAccount'])
+                    ->name('accounts.destroy');
+
+                Route::post('/roles', [AdminController::class, 'storeRole'])
+                    ->name('roles.store');
+
+                Route::put('/roles/{role}', [AdminController::class, 'updateRole'])
+                    ->name('roles.update');
+
+                Route::delete('/roles/{role}', [AdminController::class, 'deleteRole'])
+                    ->name('roles.destroy');
+            });
+    });
+});

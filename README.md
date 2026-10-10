@@ -54,6 +54,30 @@ In order to ensure that the Laravel community is welcoming to all, please review
 
 If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
+## API Authentication
+
+First-party jQuery AJAX requests use Sanctum's stateful session authentication and CSRF protection. Keep the frontend host in `SANCTUM_STATEFUL_DOMAINS` when deploying the app; do not put OAuth client secrets in browser code.
+
+External OAuth2 clients authenticate with Passport bearer tokens. To initialize Passport in each environment:
+
+```sh
+php artisan migrate
+php artisan passport:keys
+php artisan passport:client
+```
+
+Create an authorization-code client for external applications. Keep the generated Passport keys and client secrets private; the keys are stored under `storage/` and are excluded from Git.
+
+## Audio and video calls
+
+Calls use WebRTC for media and Laravel Reverb for private, real-time call signaling. Set `BROADCAST_CONNECTION=reverb` and configure the `REVERB_*` and `VITE_REVERB_*` settings in `.env` (run `php artisan reverb:install` to generate the Reverb application credentials), then run `npm run build` after changing Vite environment settings. Start Reverb in a separate terminal with:
+
+```sh
+php artisan reverb:start
+```
+
+Both users must be signed in and connected to the same Reverb application. Camera and microphone access requires HTTPS in production (localhost is allowed for development). The built-in STUN server works for many networks; configure `CALL_TURN_URL`, `CALL_TURN_USERNAME`, and `CALL_TURN_CREDENTIAL` with short-lived TURN credentials when calls must work across restrictive NATs or firewalls. TURN credentials are sent to browsers and should not be long-lived secrets.
+
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

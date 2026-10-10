@@ -407,8 +407,8 @@
             button.prop('disabled', true).text(button.data('loading-text'));
 
             $.ajax({
-                method: form.attr('method'),
-                url: form.attr('action'),
+                method: 'POST',
+                url: @json(route('register.send-otp')),
                 data: form.serialize(),
                 success(response) {
                     if (response.redirect) {

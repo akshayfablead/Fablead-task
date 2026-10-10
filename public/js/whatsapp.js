@@ -1,16 +1,13 @@
 (function (window, document, $) {
     'use strict';
 
-    const directEndpoint = '/api/whatsapp/send';
-    const templateEndpoint = '/api/whatsapp/send-template';
-    const customersEndpoint = '/api/customers';
-
     const alertBox = document.getElementById('whatsapp-alert');
     const customerSelect = document.getElementById('customer-select');
     const customerContext = document.getElementById('customer-context');
     const phoneInput = document.getElementById('whatsapp-to');
     const messageForm = document.getElementById('whatsapp-message-form');
     const templateForm = document.getElementById('whatsapp-template-form');
+    const workspace = document.querySelector('.whatsapp-workspace');
 
     let customers = [];
 
@@ -127,7 +124,7 @@
         }
 
         $.ajax({
-            url: customersEndpoint,
+            url: workspace.dataset.customersUrl,
             type: 'GET',
             dataType: 'json',
             success: function (response) {
@@ -161,7 +158,7 @@
         setButtonState(button, true, 'Send Message');
 
         $.ajax({
-            url: directEndpoint,
+            url: workspace.dataset.whatsappSendUrl,
             type: 'POST',
             data: JSON.stringify({
                 to: selectedPhone(),
@@ -216,7 +213,7 @@
         setButtonState(button, true, 'Send Template');
 
         $.ajax({
-            url: templateEndpoint,
+            url: workspace.dataset.whatsappTemplateUrl,
             type: 'POST',
             data: JSON.stringify({
                 to: selectedPhone(),

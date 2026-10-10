@@ -7,6 +7,7 @@ use App\Http\Controllers\GoogleSheetsController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\RecordController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CallController;
 
 Route::redirect('/', '/dashboard');
 
@@ -116,6 +117,14 @@ Route::middleware('auth')->group(function (): void {
 
     Route::post('/google-calendar/events', [GoogleCalendarController::class, 'storeEvent'])
         ->name('google.calendar.events.store');
+
+    Route::get('/calls', [CallController::class, 'index'])->name('calls.index');
+    Route::post('/calls/start', [CallController::class, 'start'])
+        ->middleware('throttle:10,1')
+        ->name('calls.start');
+    Route::post('/calls/signal', [CallController::class, 'signal'])
+        ->middleware('throttle:120,1')
+        ->name('calls.signal');
 
     Route::prefix('admin')
         ->name('admin.')
