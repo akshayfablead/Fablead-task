@@ -11,6 +11,8 @@
     <title>Fablead Task</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    @vite('resources/js/app.js')
+    @stack('styles')
 
     <style>
         :root {
@@ -187,10 +189,28 @@
                             WhatsApp
                         </a>
 
+                        <a class="list-group-item list-group-item-action {{ request()->routeIs('ai-tools.*') ? 'active' : '' }}"
+                            href="{{ route('ai-tools.index') }}">
+                            AI API Library
+                        </a>
+
+                        <a class="list-group-item list-group-item-action {{ request()->routeIs('calls.*') ? 'active' : '' }}"
+                            href="{{ route('calls.index') }}">
+                            Audio &amp; Video Calls
+                        </a>
+
                         @can('manage-system')
-                            <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.*') ? 'active' : '' }}"
+                            <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.index', 'admin.accounts.*', 'admin.roles.*') ? 'active' : '' }}"
                                 href="{{ route('admin.index') }}">
                                 Accounts & Roles
+                            </a>
+                            <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.user-imports.*') ? 'active' : '' }}"
+                                href="{{ route('admin.user-imports.index') }}">
+                                Test User Import
+                            </a>
+                            <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.imported-users.*') ? 'active' : '' }}"
+                                href="{{ route('admin.imported-users.index') }}">
+                                Imported Users
                             </a>
                         @endcan
                     </div>
@@ -231,6 +251,13 @@
                 'Accept': 'application/json'
             }
         });
+
+        const notificationRoutes = {
+            index: @json(route('api.notifications.index')),
+            unreadCount: @json(route('api.notifications.unread-count')),
+            read: @json(route('api.notifications.read', ['id' => '__NOTIFICATION_ID__'])),
+            readAll: @json(route('api.notifications.read-all'))
+        };
 
         // Display success or error messages.
         function notify(message, type = 'success') {
@@ -289,7 +316,7 @@
             // Update unread notification badge.
             function loadUnreadCount() {
                 return $.ajax({
-                        url: '/api/notifications/unread-count',
+                        url: notificationRoutes.unreadCount,
                         method: 'GET'
                     })
                     .done(function(response) {
@@ -348,9 +375,10 @@
             // Mark one notification as read.
             function markNotificationAsRead(notification) {
                 return $.ajax({
-                    url: '/api/notifications/' +
-                        encodeURIComponent(notification.id) +
-                        '/read',
+                    url: notificationRoutes.read.replace(
+                        '__NOTIFICATION_ID__',
+                        encodeURIComponent(notification.id)
+                    ),
                     method: 'PATCH'
                 });
             }
@@ -365,7 +393,7 @@
                 );
 
                 return $.ajax({
-                        url: '/api/notifications',
+                        url: notificationRoutes.index,
                         method: 'GET'
                     })
                     .done(function(response) {
@@ -473,7 +501,7 @@
                 $markAllButton.prop('disabled', true);
 
                 $.ajax({
-                        url: '/api/notifications/read-all',
+                        url: notificationRoutes.readAll,
                         method: 'PATCH'
                     })
                     .done(function() {

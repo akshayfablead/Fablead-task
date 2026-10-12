@@ -5,6 +5,9 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\FirebaseFirestoreService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Laravel\Passport\Passport;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Mockery;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -49,6 +52,39 @@ class CustomerOwnershipTest extends TestCase
             ->getJson('/api/customers')
             ->assertOk()
             ->assertJsonCount(3, 'data');
+    }
+
+    public function test_passport_authenticated_users_can_access_api_routes(): void
+    {
+        $user = User::factory()->create();
+        $this->mockFirestore([
+            ['id' => 'passport-customer', 'created_by' => $user->getKey()],
+        ]);
+
+        Passport::actingAs($user, ['*']);
+
+        $this->getJson('/api/customers')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', 'passport-customer');
+    }
+
+    public function test_localhost_laravel_server_is_recognized_as_a_stateful_sanctum_frontend(): void
+    {
+        $request = Request::create('/api/customers', 'GET', [], [], [], [
+            'HTTP_REFERER' => 'http://localhost:8000/customers',
+        ]);
+
+        $this->assertTrue(
+            EnsureFrontendRequestsAreStateful::fromFrontend($request)
+        );
+    }
+
+    public function test_non_admin_passport_users_cannot_access_admin_api_routes(): void
+    {
+        Passport::actingAs(User::factory()->create(), ['*']);
+
+        $this->postJson('/api/admin/accounts', [])
+            ->assertForbidden();
     }
 
     public function test_users_cannot_read_or_modify_another_users_customer(): void

@@ -420,7 +420,7 @@ class AdminController extends Controller
     ): void {
         abort_if(
             $role->guard_name !== 'web'
-            || $role->name === 'Admin',
+                || $role->name === 'Admin',
             403,
             'This role cannot be modified.'
         );

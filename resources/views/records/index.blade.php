@@ -304,7 +304,17 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        const recordBase = @json(url('/records'));
+        const recordRoutes = {
+            index: @json(route('records.data')),
+            store: @json(route('records.store')),
+            show: @json(route('records.show', ['record' => '__RECORD_ID__'])),
+            update: @json(route('records.update', ['record' => '__RECORD_ID__'])),
+            delete: @json(route('records.destroy', ['record' => '__RECORD_ID__']))
+        };
+
+        function recordRoute(template, id) {
+            return template.replace('__RECORD_ID__', encodeURIComponent(id));
+        }
 
         const modal = new bootstrap.Modal(
             document.getElementById('record-modal')
@@ -332,7 +342,7 @@
             );
 
             listRequest = $.get(
-                    @json(route('records.data')),
+                    recordRoutes.index,
                     $('#filters').serialize() + '&page=' + page
                 )
                 .done(function(result) {
@@ -408,7 +418,7 @@
                 const viewOnly = $(this).hasClass('record-view');
                 const button = $(this).prop('disabled', true);
 
-                $.get(recordBase + '/' + button.data('id'))
+                $.get(recordRoute(recordRoutes.show, button.data('id')))
                     .done(function(result) {
                         clearRecordForm();
                         viewOnlyMode = viewOnly;
@@ -467,7 +477,9 @@
                 .text('Saving...');
 
             $.ajax({
-                    url: id ? recordBase + '/' + id : recordBase,
+                    url: id
+                        ? recordRoute(recordRoutes.update, id)
+                        : recordRoutes.store,
                     method: id ? 'PUT' : 'POST',
                     data: form.serialize()
                 })
@@ -518,7 +530,7 @@
                 button.prop('disabled', true).text('Deleting...');
 
                 $.ajax({
-                    url: recordBase + '/' + button.data('id'),
+                    url: recordRoute(recordRoutes.delete, button.data('id')),
                     method: 'DELETE'
                 })
                 .done(function(result) {

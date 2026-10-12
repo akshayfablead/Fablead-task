@@ -88,83 +88,83 @@ class RecordController extends Controller
      */
 
 
-public function store(RecordRequest $request): JsonResponse
-{
-    $record = $request->user()
-        ->records()
-        ->create($request->validated());
+    public function store(RecordRequest $request): JsonResponse
+    {
+        $record = $request->user()
+            ->records()
+            ->create($request->validated());
 
-    try {
-        app(GoogleSheetsService::class)->append(
-            'Sheet1!A:F',
-            [
-                $record->id,
-                $record->title,
-                $record->description,
-                $record->status,
-                $request->user()->name,
-                $record->created_at?->toDateTimeString(),
-            ]
-        );
-    } catch (\Throwable $exception) {
-        Log::warning('Record could not be appended to Google Sheet.', [
-            'record_id' => $record->id,
-            'message' => $exception->getMessage(),
-        ]);
+        try {
+            app(GoogleSheetsService::class)->append(
+                'Sheet1!A:F',
+                [
+                    $record->id,
+                    $record->title,
+                    $record->description,
+                    $record->status,
+                    $request->user()->name,
+                    $record->created_at?->toDateTimeString(),
+                ]
+            );
+        } catch (\Throwable $exception) {
+            Log::warning('Record could not be appended to Google Sheet.', [
+                'record_id' => $record->id,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+
+        User::query()
+            ->whereKeyNot($request->user()->getAuthIdentifier())
+            ->whereHas('roles', function ($query) {
+                $query
+                    ->where('guard_name', 'web')
+                    ->whereIn('name', ['Admin', 'Manager']);
+            })
+            ->each(function (User $user) use ($record) {
+                $user->notify(new CrmNotification(
+                    title: 'New Record Created',
+                    message: "Record '{$record->title}' has been created.",
+                    url: '/records',
+                    event: 'record.created',
+                ));
+            });
+
+        return response()->json([
+            'message' => 'Record created successfully.',
+        ], 201);
     }
 
-    User::query()
-        ->whereKeyNot($request->user()->getAuthIdentifier())
-        ->whereHas('roles', function ($query) {
-            $query
-                ->where('guard_name', 'web')
-                ->whereIn('name', ['Admin', 'Manager']);
-        })
-        ->each(function (User $user) use ($record) {
-            $user->notify(new CrmNotification(
-                title: 'New Record Created',
-                message: "Record '{$record->title}' has been created.",
-                url: '/records',
-                event: 'record.created',
-            ));
-        });
+    /**
+     * Update an existing record.
+     */
+    public function update(
+        RecordRequest $request,
+        Record $record
+    ): JsonResponse {
+        Gate::authorize('update', $record);
 
-    return response()->json([
-        'message' => 'Record created successfully.',
-    ], 201);
-}
+        $record->update($request->validated());
 
-/**
- * Update an existing record.
- */
-public function update(
-    RecordRequest $request,
-    Record $record
-): JsonResponse {
-    Gate::authorize('update', $record);
+        User::query()
+            ->whereKeyNot($request->user()->getAuthIdentifier())
+            ->whereHas('roles', function ($query) {
+                $query
+                    ->where('guard_name', 'web')
+                    ->whereIn('name', ['Admin', 'Manager']);
+            })
+            ->each(function (User $user) use ($record) {
+                $user->notify(new CrmNotification(
+                    title: 'Record Updated',
+                    message: "Record '{$record->title}' has been updated.",
+                    url: '/records',
+                    event: 'record.updated',
+                ));
+            });
 
-    $record->update($request->validated());
-
-    User::query()
-        ->whereKeyNot($request->user()->getAuthIdentifier())
-        ->whereHas('roles', function ($query) {
-            $query
-                ->where('guard_name', 'web')
-                ->whereIn('name', ['Admin', 'Manager']);
-        })
-        ->each(function (User $user) use ($record) {
-            $user->notify(new CrmNotification(
-                title: 'Record Updated',
-                message: "Record '{$record->title}' has been updated.",
-                url: '/records',
-                event: 'record.updated',
-            ));
-        });
-
-    return response()->json([
-        'message' => 'Record updated successfully.',
-    ]);
-}
+        return response()->json([
+            'message' => 'Record updated successfully.',
+        ]);
+    }
 
 
     /**
@@ -227,9 +227,16 @@ public function update(
         $user = $request->user();
 
         return Record::query()
+            ->select([
+                'records.id',
+                'records.title',
+                'records.status',
+                'records.created_by',
+            ])
             ->visibleTo($user)
             ->with([
-                'creator.roles',
+                'creator:id,name',
+                'creator.roles:id,name,guard_name',
             ])
 
             /*
@@ -282,7 +289,7 @@ public function update(
              */
             ->when(
                 $user->isAdmin()
-                && ($filters['creator'] ?? null),
+                    && ($filters['creator'] ?? null),
                 function (Builder $query) use ($filters): void {
                     $query->where(
                         'created_by',
@@ -296,7 +303,7 @@ public function update(
              */
             ->when(
                 $user->isAdmin()
-                && ($filters['role'] ?? null),
+                    && ($filters['role'] ?? null),
                 function (Builder $query) use ($filters): void {
                     $query->whereHas(
                         'creator.roles',
