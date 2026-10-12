@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\CallController;
 use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\GoogleSheetsController;
 use App\Http\Controllers\RecordController;
@@ -89,7 +90,19 @@ Route::name('api.')->group(function (): void {
         });
     });
 
+    Route::post('/login', [ApiController::class, 'loginWithToken'])
+        ->middleware('throttle:login')
+        ->name('login.token');
+
     Route::middleware('auth:sanctum,api')->group(function (): void {
+        Route::post('/calls/start', [CallController::class, 'start'])
+            ->middleware('throttle:10,1')
+            ->name('calls.start');
+
+        Route::post('/calls/signal', [CallController::class, 'signal'])
+            ->middleware('throttle:120,1')
+            ->name('calls.signal');
+
         Route::get('/records/data', [ApiController::class, 'recordsIndex'])
             ->name('records.data');
 

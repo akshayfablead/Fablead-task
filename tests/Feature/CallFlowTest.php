@@ -8,6 +8,8 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
+use Laravel\Passport\Client;
+use Laravel\Passport\Passport;
 use Tests\TestCase;
 
 class CallFlowTest extends TestCase
@@ -93,6 +95,107 @@ class CallFlowTest extends TestCase
                 && $event->callId === $callId
                 && $event->signalType === 'offer'
         );
+    }
+
+    public function test_passport_api_clients_can_start_calls_and_send_signals(): void
+    {
+        Event::fake();
+
+        $caller = User::factory()->create();
+        $recipient = User::factory()->create();
+        Passport::actingAs($caller, ['*']);
+
+        $response = $this->postJson('/api/calls/start', [
+            'recipient_id' => $recipient->id,
+            'call_type' => 'audio',
+        ])
+            ->assertOk()
+            ->assertJsonPath('recipient_id', $recipient->id);
+
+        $callId = $response->json('call_id');
+
+        Event::assertDispatched(
+            IncomingCall::class,
+            fn (IncomingCall $event): bool => $event->recipientId === $recipient->id
+                && $event->callerId === $caller->id
+                && $event->callId === $callId
+        );
+
+        $this->postJson('/api/calls/signal', [
+            'recipient_id' => $recipient->id,
+            'call_id' => $callId,
+            'signal_type' => 'offer',
+            'payload' => [
+                'call_type' => 'audio',
+                'description' => [
+                    'type' => 'offer',
+                    'sdp' => 'test-sdp',
+                ],
+            ],
+        ])->assertOk();
+
+        Event::assertDispatched(
+            CallSignal::class,
+            fn (CallSignal $event): bool => $event->recipientId === $recipient->id
+                && $event->senderId === $caller->id
+                && $event->callId === $callId
+                && $event->signalType === 'offer'
+        );
+    }
+
+    public function test_call_api_endpoints_require_authentication(): void
+    {
+        $this->postJson('/api/calls/start', [
+            'recipient_id' => 1,
+            'call_type' => 'audio',
+        ])->assertUnauthorized();
+
+        $this->postJson('/api/calls/signal', [
+            'recipient_id' => 1,
+            'call_id' => (string) Str::uuid(),
+            'signal_type' => 'offer',
+        ])->assertUnauthorized();
+    }
+
+    public function test_api_login_returns_a_bearer_token_that_authenticates_api_requests(): void
+    {
+        Event::fake();
+        Client::factory()
+            ->asPersonalAccessTokenClient()
+            ->create(['provider' => 'users']);
+
+        $user = User::factory()->create([
+            'password' => 'test-password',
+        ]);
+
+        $login = $this->postJson('/api/login', [
+            'email' => $user->email,
+            'password' => 'test-password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('token_type', 'Bearer')
+            ->assertJsonPath('user.id', $user->id);
+
+        $this->withToken($login->json('access_token'))
+            ->postJson('/api/calls/start', [
+                'recipient_id' => User::factory()->create()->id,
+                'call_type' => 'audio',
+            ])
+            ->assertOk();
+    }
+
+    public function test_api_login_rejects_invalid_credentials(): void
+    {
+        $user = User::factory()->create([
+            'password' => 'test-password',
+        ]);
+
+        $this->postJson('/api/login', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ])
+            ->assertUnauthorized()
+            ->assertJsonPath('message', 'Email or password is incorrect.');
     }
 
     public function test_broadcast_events_use_snake_case_payloads_for_the_call_client(): void

@@ -12,6 +12,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     @vite('resources/js/app.js')
+    @stack('styles')
 
     <style>
         :root {
@@ -188,15 +189,28 @@
                             WhatsApp
                         </a>
 
+                        <a class="list-group-item list-group-item-action {{ request()->routeIs('ai-tools.*') ? 'active' : '' }}"
+                            href="{{ route('ai-tools.index') }}">
+                            AI API Library
+                        </a>
+
                         <a class="list-group-item list-group-item-action {{ request()->routeIs('calls.*') ? 'active' : '' }}"
                             href="{{ route('calls.index') }}">
                             Audio &amp; Video Calls
                         </a>
 
                         @can('manage-system')
-                            <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.*') ? 'active' : '' }}"
+                            <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.index', 'admin.accounts.*', 'admin.roles.*') ? 'active' : '' }}"
                                 href="{{ route('admin.index') }}">
                                 Accounts & Roles
+                            </a>
+                            <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.user-imports.*') ? 'active' : '' }}"
+                                href="{{ route('admin.user-imports.index') }}">
+                                Test User Import
+                            </a>
+                            <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.imported-users.*') ? 'active' : '' }}"
+                                href="{{ route('admin.imported-users.index') }}">
+                                Imported Users
                             </a>
                         @endcan
                     </div>

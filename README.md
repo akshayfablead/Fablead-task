@@ -63,10 +63,10 @@ External OAuth2 clients authenticate with Passport bearer tokens. To initialize 
 ```sh
 php artisan migrate
 php artisan passport:keys
-php artisan passport:client
+php artisan passport:client --personal
 ```
 
-Create an authorization-code client for external applications. Keep the generated Passport keys and client secrets private; the keys are stored under `storage/` and are excluded from Git.
+Send `POST /api/login` with `email` and `password` to receive an `access_token`, then use it as a Bearer token for protected API routes. Keep the generated Passport keys and access tokens private; the keys are stored under `storage/` and are excluded from Git.
 
 ## Audio and video calls
 
@@ -76,7 +76,62 @@ Calls use WebRTC for media and Laravel Reverb for private, real-time call signal
 php artisan reverb:start
 ```
 
-Both users must be signed in and connected to the same Reverb application. Camera and microphone access requires HTTPS in production (localhost is allowed for development). The built-in STUN server works for many networks; configure `CALL_TURN_URL`, `CALL_TURN_USERNAME`, and `CALL_TURN_CREDENTIAL` with short-lived TURN credentials when calls must work across restrictive NATs or firewalls. TURN credentials are sent to browsers and should not be long-lived secrets.
+Both users must be signed in and connected to the same Reverb application. Each participant needs a working microphone, and video calls also need a working camera; allow the browser to access these devices and close other apps that may be using them. Camera and microphone access requires HTTPS in production (localhost is allowed for development). The built-in STUN server works for many networks; configure `CALL_TURN_URL`, `CALL_TURN_USERNAME`, and `CALL_TURN_CREDENTIAL` with short-lived TURN credentials when calls must work across restrictive NATs or firewalls. TURN credentials are sent to browsers and should not be long-lived secrets.
+
+### Testing call signaling with Postman
+
+First log in to get a token:
+
+```http
+POST /api/login
+Content-Type: application/json
+Accept: application/json
+```
+
+```json
+{
+  "email": "user@example.com",
+  "password": "your-password"
+}
+```
+
+Copy `access_token` from the response. For the call requests below, select **Authorization → Bearer Token** in Postman and paste that token. Also set `Accept: application/json` and `Content-Type: application/json`.
+
+Start a call:
+
+```http
+POST /api/calls/start
+```
+
+```json
+{
+  "recipient_id": 2,
+  "call_type": "audio"
+}
+```
+
+The response includes a `call_id`. Send signaling to the same recipient and include that ID:
+
+```http
+POST /api/calls/signal
+```
+
+```json
+{
+  "recipient_id": 2,
+  "call_id": "UUID_FROM_START_RESPONSE",
+  "signal_type": "offer",
+  "payload": {
+    "call_type": "audio",
+    "description": {
+      "type": "offer",
+      "sdp": "test-sdp"
+    }
+  }
+}
+```
+
+The signaling endpoint also accepts `answer`, `ice-candidate`, `accept`, `reject`, and `end`. Postman can verify API authentication, validation, and signaling responses; it cannot access a browser's camera or microphone or generate a real WebRTC offer. For an actual call, both users must be signed in in browsers, and Reverb must be running.
 
 ## License
 

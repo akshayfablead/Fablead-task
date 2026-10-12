@@ -43,6 +43,28 @@ if (callForm) {
         statusBox.textContent = message;
     }
 
+    function getMediaErrorMessage(error, callType) {
+        switch (error.name) {
+            case 'NotFoundError':
+            case 'DevicesNotFoundError':
+                return callType === 'video'
+                    ? 'No camera or microphone was found. Connect or enable a camera and microphone, then try again.'
+                    : 'No microphone was found. Connect or enable a microphone, then try again.';
+            case 'NotAllowedError':
+            case 'PermissionDeniedError':
+                return 'Microphone or camera access was denied. Allow access in your browser settings and use HTTPS (or localhost).';
+            case 'NotReadableError':
+            case 'TrackStartError':
+                return 'The microphone or camera could not be opened. Check that it is connected and not being used by another app.';
+            case 'OverconstrainedError':
+            case 'ConstraintNotSatisfiedError':
+                return 'The microphone or camera does not meet this browser’s requirements. Check your available devices and try again.';
+            default:
+                return error.message ||
+                    'Unable to access the microphone or camera. Check your device and browser permissions.';
+        }
+    }
+
     function updateCallControls() {
         const inCall = Boolean(currentCall);
         audioBtn.disabled = !realtimeAvailable || inCall || startingCall ||
@@ -79,10 +101,14 @@ if (callForm) {
             );
         }
 
-        localStream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: callType === 'video',
-        });
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: callType === 'video',
+            });
+        } catch (error) {
+            throw new Error(getMediaErrorMessage(error, callType));
+        }
 
         localVideo.srcObject = localStream;
         const audioOnly = callType === 'audio';

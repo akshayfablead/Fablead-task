@@ -96,6 +96,36 @@ class ApiController extends Controller
         ]);
     }
 
+    public function loginWithToken(Request $request): JsonResponse
+    {
+        $credentials = $request->validate([
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+            ],
+            'password' => [
+                'required',
+                'string',
+            ],
+        ]);
+
+        if (! Auth::validate($credentials)) {
+            return response()->json([
+                'message' => 'Email or password is incorrect.',
+            ], 401);
+        }
+
+        $user = User::where('email', $credentials['email'])->firstOrFail();
+        $token = $user->createToken('Postman');
+
+        return response()->json([
+            'token_type' => 'Bearer',
+            'access_token' => $token->accessToken,
+            'user' => $user->load('roles'),
+        ]);
+    }
+
     public function logout(Request $request): JsonResponse
     {
         Auth::logout();

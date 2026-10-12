@@ -1,13 +1,15 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminImportedUsersController;
+use App\Http\Controllers\AdminUserImportController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CallController;
 use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\GoogleSheetsController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\RecordController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CallController;
 
 Route::redirect('/', '/dashboard');
 
@@ -76,6 +78,9 @@ Route::middleware('auth')->group(function (): void {
     Route::view('/whatsapp', 'whatsapp.index')
         ->name('whatsapp.index');
 
+    Route::view('/ai-tools', 'ai-tools.index')
+        ->name('ai-tools.index');
+
     Route::get('/records', [RecordController::class, 'page'])
         ->name('records.page');
 
@@ -130,6 +135,35 @@ Route::middleware('auth')->group(function (): void {
         ->name('admin.')
         ->middleware('admin')
         ->group(function (): void {
+            Route::get('/imported-users', [AdminImportedUsersController::class, 'index'])
+                ->name('imported-users.index');
+
+            Route::get('/imported-users/data', [AdminImportedUsersController::class, 'data'])
+                ->name('imported-users.data');
+
+            Route::put('/imported-users/{user}', [AdminImportedUsersController::class, 'update'])
+                ->name('imported-users.update');
+
+            Route::delete('/imported-users/{user}', [AdminImportedUsersController::class, 'destroy'])
+                ->name('imported-users.destroy');
+
+            Route::get('/user-imports', [AdminUserImportController::class, 'index'])
+                ->name('user-imports.index');
+
+            Route::post('/user-imports', [AdminUserImportController::class, 'upload'])
+                ->middleware('throttle:5,1')
+                ->name('user-imports.upload');
+
+            Route::get('/user-imports/{userImport}', [AdminUserImportController::class, 'show'])
+                ->name('user-imports.show');
+
+            Route::post('/user-imports/{userImport}/confirm', [AdminUserImportController::class, 'confirm'])
+                ->middleware('throttle:5,1')
+                ->name('user-imports.confirm');
+
+            Route::get('/user-imports/{userImport}/status', [AdminUserImportController::class, 'status'])
+                ->name('user-imports.status');
+
             Route::get('/', [AdminController::class, 'index'])
                 ->name('index');
 

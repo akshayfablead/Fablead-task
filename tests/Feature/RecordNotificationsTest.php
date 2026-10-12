@@ -66,6 +66,25 @@ class RecordNotificationsTest extends TestCase
         );
     }
 
+    public function test_records_listing_loads_creator_and_roles_with_selected_columns(): void
+    {
+        $creator = $this->createAdmin();
+        $creator->records()->create([
+            'title' => 'Relationship listing record',
+            'description' => 'Visible through the records listing.',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($creator)
+            ->getJson('/records/data')
+            ->assertOk();
+
+        $html = $response->json('html');
+
+        $this->assertStringContainsString($creator->name, $html);
+        $this->assertStringContainsString('Admin', $html);
+    }
+
     private function createAdmin(): User
     {
         $adminRole = Role::firstOrCreate([
